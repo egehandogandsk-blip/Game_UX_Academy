@@ -1,0 +1,175 @@
+.subscription-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: var(--spacing-2xl);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-3xl);
+    min-height: 80vh;
+    justify-content: center;
+}
+
+.subscription-header {
+    text-align: center;
+}
+
+.subscription-header h1 {
+    font-size: 3rem;
+    margin-bottom: var(--spacing-sm);
+    background: linear-gradient(135deg, var(--gda-text-primary), var(--gda-text-secondary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.subscription-header p {
+    color: var(--gda-text-secondary);
+    font-size: var(--font-size-lg);
+}
+
+.plans-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: var(--spacing-2xl);
+    align-items: center;
+    /* Center vertically if heights differ */
+}
+
+.plan-card {
+    background: var(--gda-bg-secondary);
+    border: 1px solid var(--gda-border);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-2xl);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-2xl);
+    position: relative;
+    transition: transform var(--transition-base), box-shadow var(--transition-base);
+    overflow: hidden;
+}
+
+.plan-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    border-color: var(--gda-text-secondary);
+}
+
+/* Highlighted Plan (Pro) */
+.plan-card.highlight {
+    background: linear-gradient(145deg, rgba(246, 204, 50, 0.05), var(--gda-bg-secondary));
+    border: 2px solid var(--gda-accent-primary);
+    transform: scale(1.05);
+    /* Make it slightly pop out */
+    z-index: 2;
+    box-shadow: 0 0 30px rgba(246, 204, 50, 0.1);
+}
+
+.plan-card.highlight:hover {
+    transform: scale(1.05) translateY(-10px);
+    box-shadow: 0 20px 50px rgba(246, 204, 50, 0.2);
+}
+
+.plan-header {
+    text-align: center;
+    border-bottom: 1px solid var(--gda-border);
+    padding-bottom: var(--spacing-lg);
+}
+
+.plan-name {
+    font-size: 1.5rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: var(--spacing-sm);
+    color: var(--gda-text-primary);
+}
+
+.plan-card.highlight .plan-name {
+    color: var(--gda-accent-primary);
+}
+
+.plan-price {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 4px;
+}
+
+.currency {
+    font-size: 2.5rem;
+    font-weight: 800;
+    color: var(--gda-text-primary);
+}
+
+.period {
+    color: var(--gda-text-secondary);
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+}
+
+.plan-features {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    flex: 1;
+    /* Push button down */
+}
+
+.feature-item {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-md);
+    color: var(--gda-text-secondary);
+    font-size: var(--font-size-sm);
+    line-height: 1.4;
+}
+
+.check-icon {
+    color: var(--gda-accent-primary);
+    font-weight: 800;
+    flex-shrink: 0;
+}
+
+.btn-subscribe {
+    width: 100%;
+    padding: var(--spacing-md);
+    background: transparent;
+    border: 2px solid var(--gda-text-primary);
+    color: var(--gda-text-primary);
+    font-weight: 700;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all var(--transition-base);
+    border-radius: var(--radius-md);
+    margin-top: auto;
+}
+
+.btn-subscribe:hover {
+    background: var(--gda-text-primary);
+    color: var(--gda-bg-primary);
+}
+
+.plan-card.highlight .btn-subscribe {
+    background: var(--gda-accent-primary);
+    border-color: var(--gda-accent-primary);
+    color: var(--gda-bg-primary);
+}
+
+.plan-card.highlight .btn-subscribe:hover {
+    background: #ffd966;
+    border-color: #ffd966;
+    transform: scale(1.02);
+}
+
+@media (max-width: 768px) {
+    .plans-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .plan-card.highlight {
+        transform: none;
+    }
+
+    .plan-card.highlight:hover {
+        transform: translateY(-5px);
+    }
+}

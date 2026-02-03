@@ -1,0 +1,82 @@
+/* Dashboard Active Missions */
+.dashboard-section {
+    margin-bottom: var(--spacing-2xl);
+}
+
+.dashboard-section h3 {
+    margin-bottom: var(--spacing-lg);
+    color: var(--gda-accent-primary);
+}
+
+.active-missions-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: var(--spacing-md);
+}
+
+.active-mission-card {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    background: var(--gda-bg-secondary);
+    border: 1px solid var(--gda-border);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-md);
+    cursor: pointer;
+    transition: all var(--transition-base);
+}
+
+.active-mission-card:hover {
+    border-color: var(--gda-accent-primary);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.active-mission-thumbnail {
+    width: 80px;
+    height: 80px;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    flex-shrink: 0;
+    border: 1px solid var(--gda-border);
+}
+
+.active-mission-thumbnail img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.active-mission-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.active-mission-info h4 {
+    margin: 0 0 var(--spacing-xs) 0;
+    font-size: var(--font-size-base);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.active-mission-game {
+    font-size: var(--font-size-sm);
+    color: var(--gda-text-secondary);
+    margin-bottom: var(--spacing-xs);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.active-mission-xp {
+    font-size: var(--font-size-sm);
+    color: var(--gda-accent-primary);
+    font-weight: 600;
+}
+
+@media (max-width: 768px) {
+    .active-missions-list {
+        grid-template-columns: 1fr;
+    }
+}

@@ -1,0 +1,283 @@
+.onboarding-container {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    background: var(--gda-bg-primary);
+}
+
+.onboarding-content {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    max-width: 580px;
+    padding: var(--spacing-2xl);
+}
+
+/* Progress Indicator */
+.progress-indicator {
+    margin-bottom: var(--spacing-3xl);
+}
+
+.progress-steps {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: var(--spacing-md);
+    position: relative;
+}
+
+.progress-step {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--gda-bg-secondary);
+    border: 2px solid var(--gda-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    color: var(--gda-text-secondary);
+    transition: all var(--transition-base);
+    position: relative;
+    z-index: 2;
+}
+
+.progress-step.active {
+    background: var(--gda-bg-tertiary);
+    border-color: var(--gda-accent-primary);
+    color: var(--gda-accent-primary);
+}
+
+.progress-step.current {
+    background: var(--gda-accent-primary);
+    border-color: var(--gda-accent-primary);
+    color: var(--gda-bg-primary);
+    box-shadow: 0 0 20px rgba(246, 204, 50, 0.4);
+    transform: scale(1.1);
+}
+
+.progress-bar {
+    width: 100%;
+    height: 4px;
+    background: var(--gda-bg-secondary);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    margin-bottom: var(--spacing-sm);
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--gda-accent-primary), var(--gda-accent-secondary));
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: var(--radius-sm);
+}
+
+.progress-text {
+    text-align: center;
+    color: var(--gda-text-secondary);
+    font-size: var(--font-size-sm);
+    margin: 0;
+}
+
+/* Step Content */
+.onboarding-step {
+    background: var(--gda-bg-secondary);
+    border: 1px solid var(--gda-border);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-2xl);
+    margin-bottom: var(--spacing-xl);
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.onboarding-step h2 {
+    font-size: var(--font-size-2xl);
+    font-weight: 700;
+    color: var(--gda-text-primary);
+    margin: 0 0 var(--spacing-sm) 0;
+}
+
+.step-description {
+    color: var(--gda-text-secondary);
+    font-size: var(--font-size-base);
+    margin: 0 0 var(--spacing-xl) 0;
+    line-height: 1.5;
+}
+
+/* Form Elements */
+.form-group {
+    margin-bottom: var(--spacing-lg);
+}
+
+.form-group label {
+    display: block;
+    font-weight: 600;
+    color: var(--gda-text-primary);
+    margin-bottom: var(--spacing-sm);
+    font-size: var(--font-size-sm);
+}
+
+.form-group .input {
+    width: 100%;
+    padding: var(--spacing-md);
+    background: var(--gda-bg-tertiary);
+    border: 2px solid var(--gda-border);
+    border-radius: var(--radius-md);
+    color: var(--gda-text-primary);
+    font-size: var(--font-size-base);
+    transition: all var(--transition-base);
+}
+
+.form-group .input:focus {
+    outline: none;
+    border-color: var(--gda-accent-primary);
+    box-shadow: 0 0 0 3px rgba(246, 204, 50, 0.1);
+}
+
+.form-group .input.input-error {
+    border-color: #F44336;
+}
+
+.form-group .textarea {
+    resize: vertical;
+    min-height: 100px;
+    font-family: inherit;
+}
+
+.error-text {
+    display: block;
+    color: #F44336;
+    font-size: var(--font-size-xs);
+    margin-top: var(--spacing-xs);
+}
+
+/* Toggle Group */
+.toggle-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-md);
+}
+
+.toggle-btn {
+    padding: var(--spacing-xl) var(--spacing-lg);
+    background: var(--gda-bg-tertiary);
+    border: 2px solid var(--gda-border);
+    border-radius: var(--radius-md);
+    color: var(--gda-text-primary);
+    font-size: var(--font-size-lg);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-base);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.toggle-btn:hover {
+    background: var(--gda-bg-secondary);
+    border-color: var(--gda-accent-primary);
+    transform: translateY(-2px);
+}
+
+.toggle-btn.active {
+    background: rgba(246, 204, 50, 0.1);
+    border-color: var(--gda-accent-primary);
+    color: var(--gda-accent-primary);
+    box-shadow: var(--shadow-glow);
+}
+
+.toggle-icon {
+    font-size: 2rem;
+}
+
+/* Navigation Actions */
+.onboarding-actions {
+    display: flex;
+    gap: var(--spacing-md);
+    justify-content: flex-end;
+}
+
+.onboarding-actions .btn {
+    min-width: 120px;
+}
+
+/* Background */
+.onboarding-background {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    overflow: hidden;
+}
+
+.bg-pattern {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background-image: radial-gradient(circle at 2px 2px,
+            var(--gda-border) 1px,
+            transparent 0);
+    background-size: 40px 40px;
+    opacity: 0.3;
+    animation: patternMove 30s linear infinite;
+}
+
+@keyframes patternMove {
+    0% {
+        transform: translate(0, 0);
+    }
+
+    100% {
+        transform: translate(40px, 40px);
+    }
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+    .onboarding-content {
+        padding: var(--spacing-lg);
+    }
+
+    .onboarding-step {
+        padding: var(--spacing-lg);
+    }
+
+    .onboarding-step h2 {
+        font-size: var(--font-size-xl);
+    }
+
+    .progress-step {
+        width: 32px;
+        height: 32px;
+        font-size: var(--font-size-sm);
+    }
+
+    .toggle-group {
+        grid-template-columns: 1fr;
+    }
+
+    .onboarding-actions {
+        flex-direction: column-reverse;
+    }
+
+    .onboarding-actions .btn {
+        width: 100%;
+    }
+}
