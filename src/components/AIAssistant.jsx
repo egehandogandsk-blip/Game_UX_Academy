@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Bot, X, Send, MessageSquare } from 'lucide-react';
 import './AIAssistant.css';
 
 const AIAssistant = ({ onEvent }) => {
@@ -176,7 +178,7 @@ const AIAssistant = ({ onEvent }) => {
             const benefitsList = course.benefits.map(b => `• ${b}`).join('\n');
 
             return {
-                text: `Mükemmel! Senin için tam paket buldum! 🎯\n\n📚 **${course.name}**\n\n💰 Yatırım: ${course.price}\n⏱️ Süre: ${course.duration}\n\n✨ Sana özel avantajlar:\n${benefitsList}\n\nBu eğitim ${goalText} için ideal! Seviyene göre özelleştirilmiş bir program sunuyoruz.\n\n📧 Hemen başvurmak için: **info@gamedesignacademia.com**\n\nDetaylı görüşme için mail atabilirsin! Ben buradayım. 💪`,
+                text: `Mükemmel! Senin için tam paket buldum! 🎯\n\n📚 **${course.name}**\n\n💰 Yatırım: ${course.price}\n⏱️ Süre: ${course.duration}\n\n✨ Sana özel avantajlar:\n${benefitsList}\n\nBu eğitim ${goalText} için ideal! Seviyene göre özelleştirilmiş bir program sunuyoruz.\n\n📧 Hemen başvurmak için: **info@gameuxacademy.com**\n\nDetaylı görüşme için mail atabilirsin! Ben buradayım. 💪`,
                 nextStep: 3,
                 context: { recommended: course.name }
             };
@@ -185,14 +187,14 @@ const AIAssistant = ({ onEvent }) => {
         // Step 3+: Post-recommendation chat
         if (input.includes('fiyat') || input.includes('ücret') || input.includes('taksit')) {
             return {
-                text: 'Ödeme konusunda esneklik sağlıyoruz! 💳\n\n• Peşin ödeme indirimleri\n• 6 aya kadar taksit\n• Özel kampanyalar\n\nDetaylar için info@gamedesignacademia.com adresine "Ödeme Seçenekleri" başlığıyla mail at!\n\nBaşka sorun var mı? 😊',
+                text: 'Ödeme konusunda esneklik sağlıyoruz! 💳\n\n• Peşin ödeme indirimleri\n• 6 aya kadar taksit\n• Özel kampanyalar\n\nDetaylar için info@gameuxacademy.com adresine "Ödeme Seçenekleri" başlığıyla mail at!\n\nBaşka sorun var mı? 😊',
                 nextStep: 3
             };
         }
 
         if (input.includes('tarih') || input.includes('ne zaman') || input.includes('başla')) {
             return {
-                text: 'Eğitimlerimiz her ay yeni dönemle başlıyor! 📅\n\nEn yakın dönem için:\n📧 info@gamedesignacademia.com\n\nBaşvurunu yap, seni hemen arıyorlar! ⚡',
+                text: 'Eğitimlerimiz her ay yeni dönemle başlıyor! 📅\n\nEn yakın dönem için:\n📧 info@gameuxacademy.com\n\nBaşvurunu yap, seni hemen arıyorlar! ⚡',
                 nextStep: 3
             };
         }
@@ -200,13 +202,13 @@ const AIAssistant = ({ onEvent }) => {
         // Friendly conversational responses
         if (input.includes('teşekkür') || input.includes('sağol')) {
             return {
-                text: 'Rica ederim! 🤗 Ne zaman istersen buradayım.\n\nBaşvurunu yapmayı unutma: info@gamedesignacademia.com\n\nBaşarılar dilerim! 🚀',
+                text: 'Rica ederim! 🤗 Ne zaman istersen buradayım.\n\nBaşvurunu yapmayı unutma: info@gameuxacademy.com\n\nBaşarılar dilerim! 🚀',
                 nextStep: 3
             };
         }
 
         return {
-            text: 'Başka merak ettiğin bir şey var mı? 😊\n\nBaşvuru için: **info@gamedesignacademia.com**\n\nBuradayım! 💬',
+            text: 'Başka merak ettiğin bir şey var mı? 😊\n\nBaşvuru için: **info@gameuxacademy.com**\n\nBuradayım! 💬',
             nextStep: 3
         };
     };
@@ -223,7 +225,33 @@ const AIAssistant = ({ onEvent }) => {
 
     // Expose trigger function to parent
     useEffect(() => {
-        window.triggerAIAssistant = triggerProactiveMessage;
+        const handleAssistantEvent = (event, data) => {
+            setIsOpen(true);
+            setHasNotification(true);
+
+            if (event === 'submission_processing') {
+                const msg = {
+                    type: 'ai',
+                    text: 'Tasarımını aldım! 🖌️\n\nŞu an GDA AI motoru üzerinde analiz yapıyorum:\n• Isı haritası oluşturuluyor...\n• Odak noktaları taranıyor...\n• Renk uyumu kontrol ediliyor...\n\nBirazdan döneceğim! ⏳',
+                    timestamp: new Date()
+                };
+                setMessages(prev => [...prev, msg]);
+            }
+
+            if (event === 'analysis_ready') {
+                const msg = {
+                    type: 'ai',
+                    text: `Analiz Tamamlandı! 🎉\n\nSkorun: ${data.score}/10\n\nDetaylı raporun ve ısı haritan hazır. Görmek istersen aşağıya tıkla! 👇`,
+                    timestamp: new Date(),
+                    isAction: true,
+                    actionText: '📊 Raporu Görüntüle',
+                    onAction: data.onClick
+                };
+                setMessages(prev => [...prev, msg]);
+            }
+        };
+
+        window.triggerAIAssistant = handleAssistantEvent;
         return () => {
             delete window.triggerAIAssistant;
         };
@@ -257,84 +285,116 @@ const AIAssistant = ({ onEvent }) => {
                 onClick={toggleChat}
                 aria-label="AI Assistant"
             >
-                <span className="ai-icon">🤖</span>
+                <span className="ai-icon"><MessageSquare size={24} /></span>
                 {hasNotification && <span className="notification-badge"></span>}
             </button>
 
             {/* Chat Panel */}
-            {isOpen && (
-                <div className="ai-chat-panel">
-                    {/* Header */}
-                    <div className="ai-chat-header">
-                        <div className="ai-header-info">
-                            <span className="ai-avatar">🤖</span>
-                            <div>
-                                <h3>GDA AI Asistan</h3>
-                                <p className="ai-status">
-                                    <span className="status-dot"></span> Online
-                                </p>
-                            </div>
-                        </div>
-                        <button className="close-btn" onClick={toggleChat}>✕</button>
-                    </div>
-
-                    {/* Messages */}
-                    <div className="ai-chat-messages">
-                        {messages.map((msg, index) => (
-                            <div key={index} className={`message ${msg.type}`}>
-                                {msg.type === 'ai' && <span className="msg-avatar">🤖</span>}
-                                <div className="message-content">
-                                    <p>{msg.text}</p>
-                                    <span className="message-time">
-                                        {msg.timestamp.toLocaleTimeString('tr-TR', {
-                                            hour: '2-digit',
-                                            minute: '2-digit'
-                                        })}
-                                    </span>
+            <AnimatePresence>
+                {isOpen && (
+                    <motion.div
+                        className="ai-chat-panel glass-strong"
+                        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                        transition={{ duration: 0.3, ease: 'easeOut' }}
+                    >
+                        {/* Header */}
+                        <div className="ai-chat-header">
+                            <div className="ai-header-info">
+                                <span className="ai-avatar"><Bot size={20} /></span>
+                                <div>
+                                    <h3>GDA AI Asistan</h3>
+                                    <p className="ai-status">
+                                        <span className="status-dot"></span> Online
+                                    </p>
                                 </div>
                             </div>
-                        ))}
-                        <div ref={chatEndRef} />
-                    </div>
-
-                    {/* Quick Actions */}
-                    {messages.length === 1 && (
-                        <div className="quick-actions">
-                            <p className="quick-label">Hızlı Seçenekler:</p>
-                            {quickActions.map((action, idx) => (
-                                <button
-                                    key={idx}
-                                    className="quick-action-btn"
-                                    onClick={() => {
-                                        setInputValue(action);
-                                        setTimeout(sendMessage, 100);
-                                    }}
-                                >
-                                    {action}
-                                </button>
-                            ))}
+                            <button className="close-btn" onClick={toggleChat}><X size={20} /></button>
                         </div>
-                    )}
 
-                    {/* Input */}
-                    <div className="ai-chat-input">
-                        <input
-                            type="text"
-                            placeholder="Mesajını yaz..."
-                            value={inputValue}
-                            onChange={(e) => setInputValue(e.target.value)}
-                            onKeyPress={handleKeyPress}
-                        />
-                        <button
-                            className="send-btn"
-                            onClick={sendMessage}
-                            disabled={!inputValue.trim()}
-                        >
-                            ➤
-                        </button>
-                    </div>
-                </div>
-            )}
+                        {/* Messages */}
+                        <div className="ai-chat-messages">
+                            {messages.map((msg, index) => (
+                                <motion.div
+                                    key={index}
+                                    className={`message ${msg.type}`}
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ duration: 0.3 }}
+                                >
+                                    {msg.type === 'ai' && <span className="msg-avatar"><Bot size={18} /></span>}
+                                    <div className="message-content">
+                                        <p style={{ whiteSpace: 'pre-wrap' }}>{msg.text}</p>
+                                        {msg.isAction && (
+                                            <button
+                                                className="action-btn"
+                                                onClick={msg.onAction}
+                                                style={{
+                                                    marginTop: '10px',
+                                                    padding: '8px 16px',
+                                                    background: 'var(--gda-primary)',
+                                                    border: 'none',
+                                                    borderRadius: '20px',
+                                                    color: 'white',
+                                                    cursor: 'pointer',
+                                                    fontWeight: 'bold'
+                                                }}
+                                            >
+                                                {msg.actionText}
+                                            </button>
+                                        )}
+                                        <span className="message-time">
+                                            {msg.timestamp.toLocaleTimeString('tr-TR', {
+                                                hour: '2-digit',
+                                                minute: '2-digit'
+                                            })}
+                                        </span>
+                                    </div>
+                                </motion.div>
+                            ))}
+                            <div ref={chatEndRef} />
+                        </div>
+
+                        {/* Quick Actions */}
+                        {messages.length === 1 && (
+                            <div className="quick-actions">
+                                <p className="quick-label">Hızlı Seçenekler:</p>
+                                {quickActions.map((action, idx) => (
+                                    <button
+                                        key={idx}
+                                        className="quick-action-btn"
+                                        onClick={() => {
+                                            setInputValue(action);
+                                            setTimeout(sendMessage, 100);
+                                        }}
+                                    >
+                                        {action}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* Input */}
+                        <div className="ai-chat-input">
+                            <input
+                                type="text"
+                                placeholder="Mesajını yaz..."
+                                value={inputValue}
+                                onChange={(e) => setInputValue(e.target.value)}
+                                onKeyPress={handleKeyPress}
+                            />
+                            <button
+                                className="send-btn"
+                                onClick={sendMessage}
+                                disabled={!inputValue.trim()}
+                            >
+                                <Send size={18} />
+                            </button>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 };

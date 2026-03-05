@@ -75,7 +75,7 @@ export class AIFeedbackEngine {
         // Generate random problem areas for demo purposes
         const problemAreas = this.generateProblemAreas(images.length);
 
-        problemAreas.forEach((area, index) => {
+        problemAreas.forEach((area) => {
             markers.push({
                 type: area.type,
                 coordinates: area.coordinates,
@@ -200,7 +200,7 @@ export class AIFeedbackEngine {
         return 'low';
     }
 
-    identifyStrengths(mission) {
+    identifyStrengths() {
         const strengths = [
             'Effective use of color hierarchy',
             'Clear visual organization',
@@ -263,14 +263,14 @@ export class AIFeedbackEngine {
             if (finding.problem.toLowerCase().includes('spacing')) {
                 resources.push({
                     title: 'Spacing in UI Design',
-                    url: 'https://www.gamedesignacademia.com/spacing-guide',
+                    url: 'https://www.gameuxacademy.com/spacing-guide',
                     type: 'ui-principles'
                 });
             }
             if (finding.problem.toLowerCase().includes('typography')) {
                 resources.push({
                     title: 'Typography Best Practices',
-                    url: 'https://www.gamedesignacademia.com/typography',
+                    url: 'https://www.gameuxacademy.com/typography',
                     type: 'ui-principles'
                 });
             }
@@ -280,20 +280,20 @@ export class AIFeedbackEngine {
     }
 
     // Helper methods
-    checkContrast(element) {
+    checkContrast() {
         // Simplified contrast check
         return Math.random() > 0.7;
     }
 
-    checkSpacing(element) {
+    checkSpacing() {
         return Math.random() > 0.6;
     }
 
-    checkAlignment(element) {
+    checkAlignment() {
         return Math.random() > 0.5;
     }
 
-    checkTypography(element) {
+    checkTypography() {
         return Math.random() > 0.65;
     }
 }

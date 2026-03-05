@@ -50,7 +50,27 @@ const GameGrid = ({ games, onGameSelect }) => {
         setVisibleGames(20); // Reset visible count when filters change
     }, [searchTerm, selectedGenre, selectedPlatform, showMissionGamesOnly, games]);
 
-    // ... (rest of useEffects)
+    // Infinite Scroll Observer
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries[0].isIntersecting) {
+                    setVisibleGames((prev) => Math.min(prev + 20, filteredGames.length));
+                }
+            },
+            { threshold: 1.0 }
+        );
+
+        if (loadMoreRef.current) {
+            observer.observe(loadMoreRef.current);
+        }
+
+        return () => {
+            if (loadMoreRef.current) {
+                observer.unobserve(loadMoreRef.current);
+            }
+        };
+    }, [filteredGames]);
 
     return (
         <div className="game-grid-container">
@@ -115,10 +135,10 @@ const GameGrid = ({ games, onGameSelect }) => {
             </div>
 
             <div className="game-grid">
-                {filteredGames.slice(0, visibleGames).map((game) => (
+                {filteredGames.slice(0, visibleGames).map((game, idx) => (
                     <div
                         key={game.id}
-                        className="game-card"
+                        className={`game-card glass-hover animate-scale-in animate-stagger-${(idx % 4) + 1}`}
                         onClick={() => onGameSelect(game)}
                     >
                         <div className="game-thumbnail">

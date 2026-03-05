@@ -165,56 +165,57 @@ export const seedDatabase = async () => {
         // Check if already seeded
         const existingGames = await dbOperations.getAll('games');
         if (existingGames && existingGames.length > 0) {
-            console.log('⚠️ Database already seeded with', existingGames.length, 'games');
-            console.log('💡 To reseed, open console and run: window.clearAndReseed()');
-            return;
-        }
-
-        const allGames = generateGames();
-
-        // Seed games
-        console.log('🌱 Seeding', allGames.length, 'games...');
-        for (const game of allGames) {
-            try {
-                await dbOperations.add('games', game);
-            } catch (error) {
-                // Skip duplicates
-                if (error.name !== 'ConstraintError') {
-                    console.error('Error adding game:', game.title, error);
+            console.log('⚠️ Games already seeded');
+        } else {
+            const allGames = generateGames();
+            console.log('🌱 Seeding', allGames.length, 'games...');
+            for (const game of allGames) {
+                try {
+                    await dbOperations.add('games', game);
+                } catch (error) {
+                    if (error.name !== 'ConstraintError') {
+                        console.error('Error adding game:', game.title, error);
+                    }
                 }
             }
+            console.log('✅ Games seeded successfully');
         }
 
-        // Create demo user with full profile
+        // Ensure user exists regardless of games seeding status
         try {
-            await dbOperations.add('users', {
-                email: 'demo@gda.com',
-                username: 'GDAUser',
-                fullName: 'Demo User',
-                xp: 0,
-                level: 1,
-                badges: [],
-                createdAt: new Date().toISOString(),
-                bio: 'Gamer & Designer',
-                profilePhoto: 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png',
-                coverPhoto: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=1600&q=80',
-                socialLinks: {
-                    behance: '', artstation: '', linkedin: '', instagram: '',
-                    facebook: '', github: '', reddit: '', xboxProfile: '',
-                    steamProfile: '', epicProfile: '', twitter: '', medium: ''
-                },
-                favoriteSoftware: [],
-                workField: '',
-                hasGDAEducation: false,
-                referralSource: '',
-                hasCompletedOnboarding: false,
-                onboardingStep: 0
-            });
+            const users = await dbOperations.getAll('users');
+            if (!users || users.length === 0) {
+                console.log('👤 Creating demo user...');
+                await dbOperations.add('users', {
+                    email: 'demo@gda.com',
+                    username: 'GDAUser',
+                    fullName: 'Demo User',
+                    xp: 0,
+                    level: 1,
+                    badges: [],
+                    createdAt: new Date().toISOString(),
+                    bio: 'Gamer & Designer',
+                    profilePhoto: 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png',
+                    coverPhoto: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?auto=format&fit=crop&w=1600&q=80',
+                    socialLinks: {
+                        behance: '', artstation: '', linkedin: '', instagram: '',
+                        facebook: '', github: '', reddit: '', xboxProfile: '',
+                        steamProfile: '', epicProfile: '', twitter: '', medium: ''
+                    },
+                    favoriteSoftware: [],
+                    workField: '',
+                    hasGDAEducation: false,
+                    referralSource: '',
+                    hasCompletedOnboarding: false,
+                    onboardingStep: 0
+                });
+                console.log('✅ Demo user created');
+            } else {
+                console.log('👤 Users already exist');
+            }
         } catch (error) {
-            console.log('Demo user already exists');
+            console.error('Error checking/creating user:', error);
         }
-
-        console.log('✅ Database seeded successfully with', allGames.length, 'games');
     } catch (error) {
         console.error('Error seeding database:', error);
     }

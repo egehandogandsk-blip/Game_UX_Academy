@@ -4,50 +4,67 @@ import './Subscription.css';
 const Subscription = ({ onSelectPlan }) => {
     const plans = [
         {
-            id: 1,
-            name: 'Starter',
-            price: '$3.99',
+            id: 'free',
+            name: 'Free',
+            price: '$0',
             period: '/ Month',
             features: [
-                '30 Free "Intermediate Missions"',
-                '4 "Expert Missions"',
-                '10 AI Feedback Sessions',
-                'Community Ticket',
-                'GDA Level 1 Education - 10% OFF'
+                '10 Beginner Missions / Month',
+                'Access to Free Community',
+                'Basic Profile'
             ],
             highlight: false,
-            color: 'var(--gda-text-primary)'
+            color: 'var(--gda-text-secondary)',
+            buttonText: 'Get Started'
         },
         {
-            id: 2,
-            name: 'Pro',
+            id: 'starter',
+            name: 'Starter',
+            price: '$2.99',
+            period: '/ Month',
+            features: [
+                'All Beginner Missions',
+                'AI Technical Analysis',
+                'Community Access',
+                '10% Discount on Education'
+            ],
+            highlight: false,
+            color: 'var(--gda-text-primary)',
+            buttonText: 'Subscribe'
+        },
+        {
+            id: 'prime',
+            name: 'Prime',
+            price: '$4.99',
+            period: '/ Month',
+            features: [
+                'Intermediate Missions',
+                'AI Technical Analysis',
+                'Exclusive Asset Packs',
+                'Community Access',
+                '4 Expert Missions',
+                '20% Discount on Education'
+            ],
+            highlight: true,
+            color: 'var(--gda-accent-primary)',
+            buttonText: 'Subscribe'
+        },
+        {
+            id: 'elite',
+            name: 'Elite',
             price: '$7.99',
             period: '/ Month',
             features: [
-                '50 Free "Intermediate Missions"',
-                '20 "Expert Missions"',
-                '15 AI Feedback Sessions',
-                'Community Ticket',
-                'GDA Level 1 Education - 20% OFF'
-            ],
-            highlight: true, // Most popular or middle tier
-            color: 'var(--gda-accent-primary)'
-        },
-        {
-            id: 3,
-            name: 'Elite',
-            price: '$14.99',
-            period: '/ Month',
-            features: [
-                '50 Free "Intermediate Missions"',
-                '30 "Expert Missions"',
-                '39 AI Feedback Sessions',
-                'Community Ticket',
-                'GDA Level 1 Education - 25% OFF',
-                'GDA Level 2 Education - 10% OFF'
+                'All Expert Missions',
+                'GDA Certificate',
+                'Leaderboard Ranking Access',
+                '3x 20% Discount Coupons',
+                'Priority Community Ticket',
+                '2 Hours Consultancy'
             ],
             highlight: false,
-            color: 'var(--gda-accent-secondary)'
+            color: 'var(--gda-accent-secondary)',
+            buttonText: 'Subscribe'
         }
     ];
 

@@ -277,52 +277,56 @@ const CommunityRoom = ({ user }) => {
                 </div>
             </div>
 
-            {/* Simple Post Modal */}
+            {/* Standardized Post Modal */}
             {isPostModalOpen && (
-                <div className="modal-overlay">
-                    <div className="modal-content community-modal">
+                <div className="modal-overlay" onClick={() => setIsPostModalOpen(false)}>
+                    <div className="modal-content community-modal" onClick={e => e.stopPropagation()}>
                         <div className="modal-header">
                             <h2>Create New Post</h2>
                             <button className="close-btn" onClick={() => setIsPostModalOpen(false)}>&times;</button>
                         </div>
-                        <form onSubmit={handlePostSubmit}>
-                            <div className="form-group">
-                                <label>Topic Type</label>
-                                <select
-                                    value={newPostContent.type}
-                                    onChange={(e) => setNewPostContent({ ...newPostContent, type: e.target.value })}
-                                >
-                                    <option value="discussion">Discussion</option>
-                                    <option value="question">Question</option>
-                                    <option value="showcase">Showcase</option>
-                                </select>
-                            </div>
-                            <div className="form-group">
-                                <label>Title</label>
-                                <input
-                                    type="text"
-                                    placeholder="What's on your mind?"
-                                    value={newPostContent.title}
-                                    onChange={(e) => setNewPostContent({ ...newPostContent, title: e.target.value })}
-                                    required
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label>Content</label>
-                                <textarea
-                                    rows="5"
-                                    placeholder="Elaborate your thoughts..."
-                                    value={newPostContent.content}
-                                    onChange={(e) => setNewPostContent({ ...newPostContent, content: e.target.value })}
-                                    className="modal-textarea"
-                                    required
-                                ></textarea>
-                            </div>
-                            <div className="modal-actions">
-                                <button type="button" className="btn-secondary" onClick={() => setIsPostModalOpen(false)}>Cancel</button>
-                                <button type="submit" className="btn-primary">Post</button>
-                            </div>
-                        </form>
+                        <div className="modal-body">
+                            <form onSubmit={handlePostSubmit}>
+                                <div className="form-group">
+                                    <label>Topic Type</label>
+                                    <select
+                                        value={newPostContent.type}
+                                        onChange={(e) => setNewPostContent({ ...newPostContent, type: e.target.value })}
+                                        className="input"
+                                    >
+                                        <option value="discussion">Discussion</option>
+                                        <option value="question">Question</option>
+                                        <option value="showcase">Showcase</option>
+                                    </select>
+                                </div>
+                                <div className="form-group">
+                                    <label>Title</label>
+                                    <input
+                                        type="text"
+                                        placeholder="What's on your mind?"
+                                        value={newPostContent.title}
+                                        onChange={(e) => setNewPostContent({ ...newPostContent, title: e.target.value })}
+                                        required
+                                        className="input"
+                                    />
+                                </div>
+                                <div className="form-group">
+                                    <label>Content</label>
+                                    <textarea
+                                        rows="5"
+                                        placeholder="Elaborate your thoughts..."
+                                        value={newPostContent.content}
+                                        onChange={(e) => setNewPostContent({ ...newPostContent, content: e.target.value })}
+                                        className="modal-textarea"
+                                        required
+                                    ></textarea>
+                                </div>
+                                <div className="modal-footer">
+                                    <button type="button" className="btn btn-secondary" onClick={() => setIsPostModalOpen(false)}>Cancel</button>
+                                    <button type="submit" className="btn btn-primary">Post</button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
                 </div>
             )}

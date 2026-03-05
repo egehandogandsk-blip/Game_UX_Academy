@@ -43,3 +43,48 @@ export const generateDemoFeedback = async () => {
         console.error('Error generating demo feedback:', error);
     }
 };
+
+export const seedLeaderboardUsers = async () => {
+    try {
+        const existingUsers = await dbOperations.getAll('users');
+        // If we have more than just the current user, don't re-seed
+        if (existingUsers && existingUsers.length > 5) {
+            console.log('Leaderboard already seeded');
+            return;
+        }
+
+        const demoUsers = [
+            { id: 'bot-1', username: 'CyberNinja', fullName: 'Aiden Storm', xp: 15420, level: 42, workField: 'Senior UI Artist', photoURL: 'https://i.pravatar.cc/150?u=aiden' },
+            { id: 'bot-2', username: 'PixelMaster', fullName: 'Elena Vance', xp: 14200, level: 38, workField: 'Visual Designer', photoURL: 'https://i.pravatar.cc/150?u=elena' },
+            { id: 'bot-3', username: 'UX_Wizard', fullName: 'Marcus Wright', xp: 13850, level: 36, workField: 'Lead UX Researcher', photoURL: 'https://i.pravatar.cc/150?u=marcus' },
+            { id: 'bot-4', username: 'DesignBot', fullName: 'Sarah Connor', xp: 12100, level: 32, workField: 'AI Interface Specialist', photoURL: 'https://i.pravatar.cc/150?u=sarah' },
+            { id: 'bot-5', username: 'CreativeSoul', fullName: 'Leo Tanaka', xp: 11500, level: 30, workField: 'Senior Game Designer', photoURL: 'https://i.pravatar.cc/150?u=leo' },
+            { id: 'bot-6', username: 'VectorVortex', fullName: 'Nina Williams', xp: 9800, level: 28, workField: 'Technical Artist', photoURL: 'https://i.pravatar.cc/150?u=nina' },
+            { id: 'bot-7', username: 'GlowGuru', fullName: 'David Bloom', xp: 8400, level: 24, workField: 'Lighting Expert', photoURL: 'https://i.pravatar.cc/150?u=david' },
+            { id: 'bot-8', username: 'SpriteKing', fullName: 'Ken Masters', xp: 7200, level: 20, workField: '2D Artist', photoURL: 'https://i.pravatar.cc/150?u=ken' },
+            { id: 'bot-9', username: 'MotionMagic', fullName: 'Julia Chang', xp: 6550, level: 18, workField: 'Motion Designer', photoURL: 'https://i.pravatar.cc/150?u=julia' },
+            { id: 'bot-10', username: 'AlphaDesigner', fullName: 'Kazuya Mishima', xp: 5100, level: 15, workField: 'UI/UX Designer', photoURL: 'https://i.pravatar.cc/150?u=kazuya' }
+        ];
+
+        for (const [index, user] of demoUsers.entries()) {
+            try {
+                // Check if user exists by id
+                const existing = await dbOperations.get('users', user.id);
+                if (!existing) {
+                    await dbOperations.add('users', {
+                        ...user,
+                        email: `${user.username.toLowerCase()}@demo.com`,
+                        subscriptionTier: index < 3 ? 'Premium' : 'Free',
+                        createdAt: new Date().toISOString(),
+                        lastLogin: new Date().toISOString()
+                    });
+                }
+            } catch {
+                // Ignore key collisions
+            }
+        }
+        console.log('✅ Leaderboard demo users seeded successfully');
+    } catch (error) {
+        console.error('Error seeding leaderboard:', error);
+    }
+};

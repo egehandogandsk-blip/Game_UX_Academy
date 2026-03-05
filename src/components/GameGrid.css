@@ -11,10 +11,13 @@
 
 .game-grid-header h2 {
     margin: 0;
+    color: #ffffff;
+    /* Explicitly white */
 }
 
 .game-count {
-    color: var(--gda-text-secondary);
+    color: rgba(255, 255, 255, 0.7);
+    /* Lighter white */
     font-size: var(--font-size-sm);
 }
 

@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 import { t } from '../utils/translations';
 import './Sidebar.css';
 
-const Sidebar = ({ user, currentPage, onNavigate, onLogout }) => {
+const Sidebar = ({ user, onLogout }) => {
     const { language, changeLanguage } = useLanguage();
     const [showLangMenu, setShowLangMenu] = useState(false);
+    const navigate = useNavigate();
 
     const languages = [
         { code: 'tr', label: 'Türkçe', flag: '🇹🇷' },
@@ -97,27 +99,27 @@ const Sidebar = ({ user, currentPage, onNavigate, onLogout }) => {
     };
 
     const navItems = [
-        { id: 'dashboard', icon: icons.dashboard, label: t(language, 'dashboard') },
-        { id: 'games', icon: icons.games, label: t(language, 'games') },
-        { id: 'missions', icon: icons.missions, label: t(language, 'missions') },
-        { id: 'community', icon: icons.community, label: 'Community' },
-        { id: 'profile', icon: icons.profile, label: t(language, 'profile') },
-        { id: 'subscription', icon: icons.subscription, label: 'Subscription' },
-        { id: 'bridge', icon: icons.bridge, label: 'GDA Bridge' },
+        { path: '/Dashboard', icon: icons.dashboard, label: t(language, 'dashboard'), id: 'inbox', stagger: 'animate-stagger-1' },
+        { path: '/Games', icon: icons.games, label: t(language, 'games'), id: 'games', stagger: 'animate-stagger-2' },
+        { path: '/Missions', icon: icons.missions, label: t(language, 'missions'), id: 'missions', stagger: 'animate-stagger-3' },
+        { path: '/Community', icon: icons.community, label: 'Community', id: 'community', stagger: 'animate-stagger-4' },
+        { path: '/Profile', icon: icons.profile, label: t(language, 'profile'), id: 'profile', stagger: 'animate-stagger-1' }, // Reusing stagger for bottom items
+        { path: '/Subscription', icon: icons.subscription, label: 'Subscription', id: 'subscription', stagger: 'animate-stagger-2' },
+        { path: '/GDA_Bridge', icon: icons.bridge, label: 'GDA Bridge', id: 'bridge', stagger: 'animate-stagger-3' },
     ];
 
     return (
-        <aside className="sidebar">
-            <div className="sidebar-header">
+        <aside className="sidebar glass animate-slide-in">
+            <div className="sidebar-header animate-fade-in">
                 <div className="logo">
                     <img src="/gda-logo.png" alt="GDA" className="logo-image" />
                     <div className="logo-subtitle">Student Community Hub</div>
                 </div>
             </div>
 
-            <div className="user-profile-section">
-                <div className="user-profile-card" onClick={() => onNavigate('profile')}>
-                    <div className="user-avatar-small">
+            <div className="user-profile-section animate-fade-in animate-stagger-1">
+                <div className="user-profile-card glass-hover" onClick={() => navigate('/Profile')}>
+                    <div className={`user-avatar-small ${user?.subscriptionTier && user.subscriptionTier !== 'Free' ? 'has-tier' : ''}`}>
                         {user?.profilePhoto ? (
                             <img src={user.profilePhoto} alt={user.username} className="avatar-img" />
                         ) : (
@@ -126,16 +128,20 @@ const Sidebar = ({ user, currentPage, onNavigate, onLogout }) => {
                     </div>
                     <div className="user-info-compact">
                         <div className="user-name-compact">{user?.username || 'GDA User'}</div>
-                        <div className="user-meta-compact">
+                        <div className="user-badges-row">
                             <span className="level-badge">Lvl {user?.level || 1}</span>
                             {user?.subscriptionTier && user.subscriptionTier !== 'Free' && (
-                                <>
-                                    <span className="xp-divider">•</span>
-                                    <span className="tier-badge-sidebar">{user.subscriptionTier}</span>
-                                </>
+                                <span className="tier-badge-sidebar">{user.subscriptionTier}</span>
                             )}
-                            <span className="xp-divider">•</span>
-                            <span className="xp-text-compact">{user?.xp || 0} XP</span>
+                        </div>
+                        <div className="xp-progress-container">
+                            <div className="xp-bar">
+                                <div
+                                    className="xp-fill"
+                                    style={{ width: `${Math.min(((user?.xp || 0) % 1000) / 10, 100)}%` }}
+                                ></div>
+                            </div>
+                            <span className="xp-text-mini">{user?.xp || 0} XP</span>
                         </div>
                     </div>
                 </div>
@@ -143,21 +149,21 @@ const Sidebar = ({ user, currentPage, onNavigate, onLogout }) => {
 
             <nav className="sidebar-nav">
                 {navItems.map(item => (
-                    <button
-                        key={item.id}
-                        className={`nav-item ${currentPage === item.id ? 'active' : ''}`}
-                        onClick={() => onNavigate(item.id)}
+                    <NavLink
+                        key={item.path}
+                        to={item.path}
+                        className={({ isActive }) => `nav-item glass-hover animate-fade-in ${item.stagger} ${isActive ? 'active' : ''}`}
                     >
                         <span className="nav-icon">{item.icon}</span>
                         <span className="nav-label">{item.label}</span>
                         {item.id === 'inbox' && user?.unreadMessages > 0 && (
                             <span className="notification-badge">{user.unreadMessages}</span>
                         )}
-                    </button>
+                    </NavLink>
                 ))}
             </nav>
 
-            <div className="sidebar-footer">
+            <div className="sidebar-footer animate-fade-in">
                 {/* Language Selector */}
                 <div className="language-selector">
                     <button

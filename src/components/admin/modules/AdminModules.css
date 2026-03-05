@@ -1,0 +1,466 @@
+/* Admin Modules - Glassmorphism Design */
+
+/* Module Container */
+.module-title {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin-bottom: var(--spacing-xl);
+    color: var(--gda-text-primary);
+}
+
+/* Actions Bar */
+.actions-bar {
+    display: flex;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-xl);
+    flex-wrap: wrap;
+}
+
+.btn-admin {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: 10px 20px;
+    border-radius: var(--radius-md);
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: all var(--transition-base);
+    white-space: nowrap;
+}
+
+.btn-admin.primary {
+    background: linear-gradient(135deg, #00aa55, #00ff88);
+    color: #000;
+    box-shadow: var(--shadow-sm);
+}
+
+.btn-admin.primary:hover {
+    box-shadow: 0 0 20px rgba(0, 255, 136, 0.4);
+    transform: translateY(-2px);
+}
+
+.btn-admin.secondary {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--gda-text-primary);
+}
+
+.btn-admin.secondary:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+.btn-admin.small {
+    padding: 6px 14px;
+    font-size: 0.85rem;
+}
+
+/* Glassmorphism Modal Overlay */
+.admin-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: var(--spacing-xl);
+}
+
+/* Modal Content - Glass Effect */
+.admin-form {
+    background: rgba(26, 26, 26, 0.95);
+    backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-xl);
+    max-width: 900px;
+    width: 100%;
+    max-height: 85vh;
+    overflow-y: auto;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+}
+
+.admin-form h3 {
+    font-size: 1.5rem;
+    margin-bottom: var(--spacing-lg);
+    color: var(--gda-text-primary);
+}
+
+.admin-form h4 {
+    font-size: 1.1rem;
+    margin-top: var(--spacing-lg);
+    margin-bottom: var(--spacing-md);
+    color: var(--gda-text-secondary);
+}
+
+/* Glass Form Inputs */
+.admin-form input,
+.admin-form select,
+.admin-form textarea {
+    width: 100%;
+    padding: 12px 16px;
+    margin-bottom: var(--spacing-md);
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-md);
+    color: var(--gda-text-primary);
+    font-family: var(--font-family);
+    font-size: var(--font-size-base);
+    transition: all var(--transition-fast);
+}
+
+.admin-form input:focus,
+.admin-form select:focus,
+.admin-form textarea:focus {
+    outline: none;
+    border-color: #00ff88;
+    background: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 0 0 3px rgba(0, 255, 136, 0.1);
+}
+
+.admin-form input::placeholder,
+.admin-form textarea::placeholder {
+    color: rgba(255, 255, 255, 0.3);
+}
+
+/* Form Actions */
+.form-actions {
+    display: flex;
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-xl);
+    justify-content: flex-end;
+}
+
+/* RAWG Search Results - HORIZONTAL GRID LAYOUT */
+.rawg-results {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: var(--spacing-md);
+    margin-top: var(--spacing-lg);
+    max-height: 500px;
+    overflow-y: auto;
+    padding-right: var(--spacing-sm);
+}
+
+/* RAWG Game Card - Compact Horizontal Layout */
+.rawg-game-card {
+    display: flex;
+    gap: var(--spacing-md);
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-md);
+    transition: all var(--transition-base);
+    align-items: center;
+}
+
+.rawg-game-card:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.15);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.rawg-game-card img {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: var(--radius-sm);
+    flex-shrink: 0;
+}
+
+.rawg-game-card>div {
+    flex: 1;
+    min-width: 0;
+}
+
+.rawg-game-card h5 {
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin: 0 0 4px 0;
+    color: #FFFFFF;
+    /* Changed from var(--gda-text-primary) for better readability */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.rawg-game-card p {
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.7);
+    /* Changed from var(--gda-text-tertiary) */
+    margin: 2px 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.rawg-game-card button {
+    flex-shrink: 0;
+    padding: 8px 16px;
+    font-size: 0.85rem;
+}
+
+/* AI Generated Missions - Grid Layout */
+.generated-missions {
+    margin-top: var(--spacing-lg);
+}
+
+.generated-missions h4 {
+    margin-bottom: var(--spacing-md);
+    color: #FFFFFF;
+    /* Ensure white text */
+}
+
+.mission-preview {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+    transition: all var(--transition-base);
+}
+
+.mission-preview:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+.mission-preview h5 {
+    font-size: 1rem;
+    margin-bottom: var(--spacing-sm);
+    color: #FFFFFF;
+    /* White text */
+}
+
+.mission-preview p {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.8);
+    /* Light text */
+    margin: 4px 0;
+}
+
+.mission-preview p strong {
+    color: #FFFFFF;
+    /* White for labels */
+}
+
+/* Data Tables with Glass Effect */
+.data-table-container {
+    background: rgba(255, 255, 255, 0.02);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    overflow-x: auto;
+    /* Handle horizontal overflow */
+}
+
+.admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 600px;
+    /* Prevent table from being too narrow */
+}
+
+.admin-table th,
+.admin-table td {
+    padding: 14px 16px;
+    text-align: left;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    color: #FFFFFF;
+    /* Ensure all table text is white */
+}
+
+.admin-table th {
+    background: rgba(255, 255, 255, 0.03);
+    color: rgba(255, 255, 255, 0.9);
+    /* Light white for headers */
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.admin-table td {
+    color: #FFFFFF;
+    /* White text for table cells */
+    font-size: 0.9rem;
+}
+
+.admin-table tbody tr {
+    transition: background var(--transition-fast);
+}
+
+.admin-table tbody tr:hover {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.btn-icon {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 1.2rem;
+    padding: 6px;
+    border-radius: var(--radius-sm);
+    transition: all var(--transition-fast);
+    opacity: 0.6;
+}
+
+.btn-icon:hover {
+    background: rgba(255, 255, 255, 0.08);
+    opacity: 1;
+}
+
+/* User Management Layout */
+.user-list-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.user-card-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 100px;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 12px 16px;
+    border-radius: var(--radius-md);
+    transition: all var(--transition-fast);
+}
+
+.user-card-row:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+.user-info-cell {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.user-avatar-wrapper {
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.admin-avatar-small {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.user-text-details {
+    display: flex;
+    flex-direction: column;
+}
+
+.user-name {
+    color: #FFFFFF;
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.user-email {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.8rem;
+}
+
+/* Sub Tabs - Glassmorphism Redesign */
+.sub-tabs {
+    display: flex;
+    gap: 4px;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 4px;
+    border-radius: var(--radius-lg);
+    width: fit-content;
+    margin-bottom: var(--spacing-lg);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sub-tab {
+    padding: 8px 20px;
+    border-radius: var(--radius-md);
+    border: none;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.sub-tab:hover {
+    color: #FFFFFF;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.sub-tab.active {
+    background: rgba(255, 255, 255, 0.15);
+    color: #FFFFFF;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(4px);
+}
+
+/* Scrollbar for modals */
+.admin-form::-webkit-scrollbar,
+.rawg-results::-webkit-scrollbar {
+    width: 6px;
+}
+
+.admin-form::-webkit-scrollbar-track,
+.rawg-results::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: var(--radius-full);
+}
+
+.admin-form::-webkit-scrollbar-thumb,
+.rawg-results::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-full);
+}
+
+.admin-form::-webkit-scrollbar-thumb:hover,
+.rawg-results::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .rawg-results {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-form {
+        padding: var(--spacing-lg);
+        max-height: 90vh;
+    }
+
+    .rawg-game-card {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .rawg-game-card img {
+        width: 100%;
+        height: 120px;
+    }
+}

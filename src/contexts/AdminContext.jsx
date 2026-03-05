@@ -10,16 +10,13 @@ export const useAdmin = () => {
     return context;
 };
 
-// Admin credentials (hardcoded for now, will be moved to secure storage later)
-const ADMIN_CREDENTIALS = [
-    {
-        id: 'admin-1',
-        username: 'admin',
-        password: 'admin123',
-        role: 'super_admin',
-        name: 'Admin User'
-    }
-];
+// Admin credentials (Initially seeded, then from DB)
+const DEFAULT_ADMIN = {
+    username: 'admin',
+    password: 'admin123',
+    role: 'super_admin',
+    name: 'Admin User'
+};
 
 export const AdminProvider = ({ children }) => {
     const [adminUser, setAdminUser] = useState(null);
@@ -40,24 +37,53 @@ export const AdminProvider = ({ children }) => {
         }
     }, []);
 
-    const adminLogin = (username, password) => {
-        const admin = ADMIN_CREDENTIALS.find(
-            a => a.username === username && a.password === password
-        );
+    const adminLogin = async (username, password) => {
+        // First, try DB admins
+        try {
+            // Lazy import to avoid circular dep issues during init if any
+            const { dbOperations } = await import('../database/schema.js');
+            const admins = await dbOperations.getAll('admins');
 
-        if (admin) {
-            const adminSession = {
-                id: admin.id,
-                username: admin.username,
-                role: admin.role,
-                name: admin.name,
-                loginTime: new Date().toISOString()
-            };
+            let admin = admins.find(a => a.username === username && a.password === password);
 
-            setAdminUser(adminSession);
-            setIsAdminAuthenticated(true);
-            localStorage.setItem('gda-admin-session', JSON.stringify(adminSession));
-            return true;
+            // Fallback to default if DB is empty/not seeded yet (Safety net)
+            if (!admin && admins.length === 0 && username === DEFAULT_ADMIN.username && password === DEFAULT_ADMIN.password) {
+                admin = { ...DEFAULT_ADMIN, id: 'master_root' };
+                // Optionally seed it? For now just allow login
+            }
+
+            if (admin) {
+                const adminSession = {
+                    id: admin.id,
+                    username: admin.username,
+                    role: admin.role,
+                    name: admin.name || admin.username,
+                    loginTime: new Date().toISOString()
+                };
+
+                setAdminUser(adminSession);
+                setIsAdminAuthenticated(true);
+                localStorage.setItem('gda-admin-session', JSON.stringify(adminSession));
+
+                // Track login in analytics
+                dbOperations.add('analytics_logs', {
+                    type: 'admin_login',
+                    user: admin.username,
+                    date: new Date().toISOString()
+                });
+
+                return true;
+            }
+        } catch (e) {
+            console.error("Admin login error", e);
+            // Fallback for hardcoded during dev if DB fails
+            if (username === DEFAULT_ADMIN.username && password === DEFAULT_ADMIN.password) {
+                const session = { ...DEFAULT_ADMIN, id: 'dev_fallback' };
+                setAdminUser(session);
+                setIsAdminAuthenticated(true);
+                localStorage.setItem('gda-admin-session', JSON.stringify(session));
+                return true;
+            }
         }
 
         return false;

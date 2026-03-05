@@ -1,0 +1,22 @@
+export const designTips = [
+    "Mobil oyunlarda butonların tıklanabilir alanı en az 44x44 piksel olmalıdır. Bu, oyuncu hatasını azaltır.",
+    "Renk körü oyuncular için kritik bilgileri (HP, Mana) sadece renkle değil, ikon veya desenle de destekleyin.",
+    "Kullanıcı testlerinde oyuncuların ne dediğine değil, ne yaptığına odaklanın. Davranışlar sözlerden daha dürüsttür.",
+    "Oyun ekonomisinde 'Sink' (Harcama) ve 'Source' (Kazanç) dengesini kurun. Enflasyonu önlemek için harcama kanalları yaratın.",
+    "Loading ekranlarını boş bırakmayın. İpuçları veya oyun lore'u (hikaye) parçaları ekleyerek bekleme süresini değerlendirin.",
+    "Platform oyunlarında 'Coyote Time' kullanın: Oyuncu platformdan düştükten sonraki birkaç milisaniye içinde zıplamasına izin verin.",
+    "UI hiyerarşisinde en önemli bilgi en büyük ve en kontrastlı olmalıdır. Oyuncunun gözünü yönlendirin.",
+    "Ses tasarımı oynanışı desteklemelidir. Düşman ayak sesleri veya mermi bitiş sesi, görsel uyarıdan daha hızlı tepki verdirir.",
+    "Ödüllendirme sisteminde 'Random Rewards' (Rastgele Ödüller) dopamin salgısını artırır. Sürpriz elementini kullanın.",
+    "HUD (Heads-Up Display) tasarımında 'Diegetic UI' düşünün. Dead Space örneğindeki gibi can barını karakterin üzerinde göstermeyi deneyin.",
+    "Korku oyunlarında sessizlik, en az ses kadar etkilidir. Gerilimi artırmak için sesleri aniden kesin.",
+    "Oyuncuya bir mekaniği öğretirken önce güvenli bir ortamda denemesini sağlayın, ardından cezalandırıcı bir ortamda test edin.",
+    "Mobil F2P oyunlarda ilk gün oynanış süresi (Retention D1) en kritik metriktir. İlk 5 dakika kusursuz olmalı.",
+    "Erişilebilirlik bir 'ekstra' değil, tasarımın temelidir. Altyazı boyutlarını ve arka plan opaklığını ayarlanabilir yapın.",
+    "Seviye tasarımında ışıklandırmayı oyuncuyu yönlendirmek için kullanın. Parlak alanlar genellikle 'gitmen gereken yer' mesajı verir.",
+    "Feedback Loop: Oyuncunun her eylemine (zıplama, vuruş, toplama) görsel veya işitsel bir geri bildirim verin. 'Juicy' hissini yaratın.",
+    "Zorluk eğrisini testere dişi şeklinde yapın: Zorluk yavaşça artsın, ardından oyuncunun rahatlaması için kısa bir kolay bölüm sunun.",
+    "Envanter yönetiminde 'Sıralama' ve 'Filtreleme' seçenekleri sunmak, oyuncunun bilişsel yükünü (cognitive load) azaltır.",
+    "Metinleri kısa tutun. Oyuncular okumaz, tararlar. Önemli kelimeleri **kalın** veya *renkli* yapın.",
+    "Oyun içi markette 'Anchor Price' tekniğini kullanın. Pahalı bir ürünün yanına daha makul fiyatlısını koyarak ikincisini cazip hale getirin."
+];

@@ -1,7 +1,7 @@
 // Database Schema using IndexedDB for client-side persistence
 let db = null;
 const DB_NAME = 'GDADatabase';
-const DB_VERSION = 3; // Updated for profile & FTUE features
+const DB_VERSION = 5; // Updated for Admin Panel Features
 
 // Initialize IndexedDB
 export const initDatabase = () => {
@@ -18,13 +18,9 @@ export const initDatabase = () => {
       db = event.target.result;
 
       // Drop old stores if they exist (for schema updates)
-      if (event.oldVersion > 0 && event.oldVersion < 3) { // Only drop if upgrading from v1 or v2
-        if (db.objectStoreNames.contains('games')) {
-          db.deleteObjectStore('games');
-        }
-        if (db.objectStoreNames.contains('missions')) {
-          db.deleteObjectStore('missions');
-        }
+      if (event.oldVersion > 0 && event.oldVersion < 3) {
+        if (db.objectStoreNames.contains('games')) db.deleteObjectStore('games');
+        if (db.objectStoreNames.contains('missions')) db.deleteObjectStore('missions');
       }
 
       // Users Table
@@ -34,21 +30,21 @@ export const initDatabase = () => {
         usersStore.createIndex('username', 'username', { unique: true });
       }
 
-      // Games Table - Updated with genres array
+      // Games Table
       if (!db.objectStoreNames.contains('games')) {
         const gamesStore = db.createObjectStore('games', { keyPath: 'id', autoIncrement: true });
-        gamesStore.createIndex('title', 'title', { unique: true }); // Changed to unique
+        gamesStore.createIndex('title', 'title', { unique: true });
         gamesStore.createIndex('platform', 'platform', { unique: false, multiEntry: true });
-        gamesStore.createIndex('genres', 'genres', { unique: false, multiEntry: true }); // Changed from 'genre'
+        gamesStore.createIndex('genres', 'genres', { unique: false, multiEntry: true });
       }
 
-      // Missions Table - Updated with uiType index
+      // Missions Table
       if (!db.objectStoreNames.contains('missions')) {
         const missionsStore = db.createObjectStore('missions', { keyPath: 'id', autoIncrement: true });
         missionsStore.createIndex('gameId', 'gameId', { unique: false });
         missionsStore.createIndex('difficulty', 'difficulty', { unique: false });
-        missionsStore.createIndex('uiType', 'uiType', { unique: false }); // Added
-        missionsStore.createIndex('status', 'status', { unique: false }); // Added
+        missionsStore.createIndex('uiType', 'uiType', { unique: false });
+        missionsStore.createIndex('status', 'status', { unique: false });
       }
 
       // Submissions Table
@@ -63,6 +59,74 @@ export const initDatabase = () => {
       if (!db.objectStoreNames.contains('ai_feedback')) {
         const feedbackStore = db.createObjectStore('ai_feedback', { keyPath: 'id', autoIncrement: true });
         feedbackStore.createIndex('submissionId', 'submissionId', { unique: false });
+      }
+
+      // Newsletter Table
+      if (!db.objectStoreNames.contains('newsletter')) {
+        const newsletterStore = db.createObjectStore('newsletter', { keyPath: 'id', autoIncrement: true });
+        newsletterStore.createIndex('email', 'email', { unique: true });
+      }
+
+      // === NEW ADMIN STORES (v5) ===
+
+      // Admins Table
+      if (!db.objectStoreNames.contains('admins')) {
+        const adminStore = db.createObjectStore('admins', { keyPath: 'id', autoIncrement: true });
+        adminStore.createIndex('username', 'username', { unique: true });
+        adminStore.createIndex('role', 'role', { unique: false });
+      }
+
+      // Bridge: Jobs
+      if (!db.objectStoreNames.contains('jobs')) {
+        const jobsStore = db.createObjectStore('jobs', { keyPath: 'id', autoIncrement: true });
+        jobsStore.createIndex('company', 'company', { unique: false });
+        jobsStore.createIndex('status', 'status', { unique: false }); // active, closed
+      }
+
+      // Bridge: Partners
+      if (!db.objectStoreNames.contains('partners')) {
+        db.createObjectStore('partners', { keyPath: 'id', autoIncrement: true });
+      }
+
+      // Bridge: Certificates
+      if (!db.objectStoreNames.contains('certificates')) {
+        const certStore = db.createObjectStore('certificates', { keyPath: 'id', autoIncrement: true });
+        certStore.createIndex('userId', 'userId', { unique: false });
+        certStore.createIndex('code', 'code', { unique: true });
+      }
+
+      // Subscription Logs (For Export)
+      if (!db.objectStoreNames.contains('subscriptions')) {
+        const subStore = db.createObjectStore('subscriptions', { keyPath: 'id', autoIncrement: true });
+        subStore.createIndex('userId', 'userId', { unique: false });
+        subStore.createIndex('plan', 'plan', { unique: false });
+        subStore.createIndex('date', 'date', { unique: false });
+      }
+
+      // Content Assets (CMS)
+      if (!db.objectStoreNames.contains('content_assets')) {
+        const contentStore = db.createObjectStore('content_assets', { keyPath: 'id', autoIncrement: true });
+        contentStore.createIndex('type', 'type', { unique: false }); // image, text, etc.
+        contentStore.createIndex('category', 'category', { unique: false }); // dashboard, sidebar, etc.
+      }
+
+      // Web Page Configs (Meta tags, routes)
+      if (!db.objectStoreNames.contains('page_configs')) {
+        db.createObjectStore('page_configs', { keyPath: 'route' }); // Key is route path like '/Games'
+      }
+
+      // Analytics Logs
+      if (!db.objectStoreNames.contains('analytics_logs')) {
+        const analyticsStore = db.createObjectStore('analytics_logs', { keyPath: 'id', autoIncrement: true });
+        analyticsStore.createIndex('type', 'type', { unique: false }); // click, view, login
+        analyticsStore.createIndex('date', 'date', { unique: false });
+      }
+
+      // === NEW PASS CODES STORE (v6) ===
+      if (!db.objectStoreNames.contains('pass_codes')) {
+        const passCodesStore = db.createObjectStore('pass_codes', { keyPath: 'id', autoIncrement: true });
+        passCodesStore.createIndex('number', 'number', { unique: true });
+        passCodesStore.createIndex('status', 'status', { unique: false });
       }
     };
   });
@@ -144,22 +208,37 @@ export const dbOperations = {
     });
   },
 
-  query: (storeName, indexName, value) => {
+  query: async (storeName, indexName, value) => {
+    const db = await initDatabase();
     return new Promise((resolve, reject) => {
-      initDatabase().then(db => {
-        const transaction = db.transaction([storeName], 'readonly');
-        const store = transaction.objectStore(storeName);
-        const index = store.index(indexName);
-        const request = index.getAll(value);
-        request.onsuccess = () => resolve(request.result);
-        request.onerror = () => reject(request.error);
-      });
+      const transaction = db.transaction([storeName], 'readonly');
+      const store = transaction.objectStore(storeName);
+      const index = store.index(indexName);
+      const request = index.getAll(value);
+
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
+    });
+  },
+
+  queryUsersByEmail: async (email) => {
+    const db = await initDatabase();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(['users'], 'readonly');
+      const store = transaction.objectStore('users');
+      const index = store.index('email');
+      const request = index.get(email);
+
+      request.onsuccess = () => resolve(request.result);
+      request.onerror = () => reject(request.error);
     });
   },
 
   // Clear entire database
   clearDatabase: async () => {
     const db = await initDatabase();
+    // Logic to clear specific stores or delete DB
+    // For now simple implementation
     const storeNames = ['users', 'games', 'missions', 'submissions', 'ai_feedback'];
 
     for (const storeName of storeNames) {

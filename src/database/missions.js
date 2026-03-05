@@ -507,7 +507,7 @@ export async function syncMissionDescriptions() {
                 // Only update if different to save DB writes
                 if (mission.description !== newDescription) {
                     mission.description = newDescription;
-                    await dbOperations.update('missions', mission);
+                    await dbOperations.update('missions', mission.id, mission);
                     updatedCount++;
                 }
             }

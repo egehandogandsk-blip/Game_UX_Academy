@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import CompanyList from './bridge/CompanyList';
 import Career from './bridge/Career';
 import CertificateVerify from './bridge/CertificateVerify';
+import PassCodeCheck from './bridge/PassCodeCheck';
 import './GDABridge.css';
 
 const GDABridge = ({ user }) => {
@@ -10,7 +11,8 @@ const GDABridge = ({ user }) => {
     const tabs = [
         { id: 'companies', label: 'GDA Bridge Companies', icon: '🏢' },
         { id: 'career', label: 'Kariyer', icon: '💼' },
-        { id: 'verify', label: 'Sertifika Verify', icon: '✅' }
+        { id: 'verify', label: 'Sertifika Verify', icon: '✅' },
+        { id: 'passcode', label: 'Pass Code Check', icon: '🔑' }
     ];
 
     const renderContent = () => {
@@ -21,6 +23,8 @@ const GDABridge = ({ user }) => {
                 return <Career user={user} />;
             case 'verify':
                 return <CertificateVerify user={user} />;
+            case 'passcode':
+                return <PassCodeCheck />;
             default:
                 return null;
         }

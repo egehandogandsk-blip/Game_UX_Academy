@@ -15,7 +15,7 @@ const MissionDetail = ({ mission, userId, onClose, onAccept }) => {
             if (onAccept) onAccept(result.mission);
             onClose();
         } else {
-            alert(result.message || 'Failed to accept mission');
+            alert(result.message || result.error || 'Failed to accept mission');
         }
     };
 

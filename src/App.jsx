@@ -1,14 +1,23 @@
 import React, { useState, useEffect } from 'react';
+import { Routes, Route, Navigate, useNavigate, useParams, useLocation } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { initDatabase, dbOperations } from './database/schema.js';
 import { seedDatabase } from './database/seed.js';
 import { seedMissions, fillMissingMissions, syncMissionDescriptions } from './database/missions.js';
 import { MissionManager } from './utils/missionManager.js';
-import { useAdmin } from './contexts/AdminContext';
+import { useAdmin, AdminProvider } from './contexts/AdminContext'; // Ensure AdminProvider is exported or handled in main.jsx? Checked: AdminContext exports AdminProvider.
+import { seedPartners } from './database/seedPartners.js';
+// Wait, main.jsx wraps App? No, main.jsx renders App. App.jsx likely didn't wrap AdminProvider in previous version? 
+// Checking context... "useAdmin must be used within AdminProvider". 
+// Previous App.jsx didn't have AdminProvider. It must be in main.jsx!
+// I need to check main.jsx again. If safe, I will wrap here.
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+
 import Login from './components/auth/Login';
+import LoginAdmin from './components/auth/LoginAdmin';
 import Onboarding from './components/auth/Onboarding';
 import OnboardingLoader from './components/auth/OnboardingLoader';
 import Sidebar from './components/Sidebar';
-import BottomNav from './components/BottomNav';
 import GameGrid from './components/GameGrid';
 import GameDetails from './components/GameDetails';
 import Inbox from './components/Inbox';
@@ -24,371 +33,196 @@ import Checkout from './components/Checkout';
 import AIAssistant from './components/AIAssistant';
 import AdminPanel from './components/admin/AdminPanel';
 import './index.css';
+import './index.css';
 import './App.css';
 
-function App() {
+// Page Transition Wrapper
+const pageVariants = {
+  initial: { opacity: 0, y: 10, scale: 0.98 },
+  animate: { opacity: 1, y: 0, scale: 1 },
+  exit: { opacity: 0, y: -10, scale: 0.98 }
+};
+
+const pageTransition = {
+  duration: 0.4,
+  ease: [0.25, 1, 0.5, 1]
+};
+
+const PageWrapper = ({ children, className }) => (
+  <motion.div
+    className={className}
+    initial="initial"
+    animate="animate"
+    exit="exit"
+    variants={pageVariants}
+    transition={pageTransition}
+    style={{ width: '100%', height: '100%' }}
+  >
+    {children}
+  </motion.div>
+);
+
+// Wrapper to find game from URL param
+const GameDetailsWrapper = ({ games, onBack, onMissionSelect }) => {
+  const { gameName } = useParams();
+  const decodedGameName = gameName ? gameName.replace(/_/g, ' ') : '';
+  const game = games.find(g =>
+    g.title.toLowerCase() === decodedGameName.toLowerCase() ||
+    g.name?.toLowerCase() === decodedGameName.toLowerCase()
+  );
+
+  if (!game) {
+    return <div className="p-8">Game not found: {decodedGameName}. <button onClick={onBack}>Back to Games</button></div>;
+  }
+  return <GameDetails game={game} onBack={onBack} onMissionSelect={onMissionSelect} />;
+};
+
+const AppContent = () => {
   const { isAdminAuthenticated } = useAdmin();
+  const { currentUser, logout, refreshUser } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const [loading, setLoading] = useState(true);
-  const [currentPage, setCurrentPage] = useState('dashboard');
-  const [user, setUser] = useState(null);
   const [games, setGames] = useState([]);
+  // activeMissions, etc...
   const [activeMissions, setActiveMissions] = useState([]);
   const [selectedMission, setSelectedMission] = useState(null);
-  const [selectedGame, setSelectedGame] = useState(null);
+  const [selectedPlan, setSelectedPlan] = useState(null);
   const [showMissionDetail, setShowMissionDetail] = useState(false);
   const [submittingMission, setSubmittingMission] = useState(null);
-  const [selectedPlan, setSelectedPlan] = useState(null);
-
-  // FTUE state
   const [showOnboardingLoader, setShowOnboardingLoader] = useState(false);
 
-  const initialized = React.useRef(false);
-
+  // Initial Data Loading (Seeding)
   useEffect(() => {
-    if (!initialized.current) {
-      initialized.current = true;
-      initializeApp();
-    }
+    const init = async () => {
+      // Initialize database & Seed
+      try {
+        await initDatabase();
+        await seedDatabase();
+        await seedMissions();
+        await fillMissingMissions();
+        await syncMissionDescriptions();
+        await seedPartners();
+
+        // Load Games Data
+        const [allGames, allMissions] = await Promise.all([
+          dbOperations.getAll('games'),
+          dbOperations.getAll('missions')
+        ]);
+
+        const gamesWithCounts = allGames.map(game => {
+          const gameMissions = allMissions.filter(m => m.gameId === game.id);
+          return { ...game, missionCount: gameMissions.length };
+        });
+        setGames(gamesWithCounts);
+      } catch (e) {
+        console.error("Init failed", e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    init();
   }, []);
 
+  // Load missions when user changes
   useEffect(() => {
-    if (user) {
+    if (currentUser) {
       loadActiveMissions();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  }, [currentUser]);
 
   const loadActiveMissions = async () => {
-    if (!user) return;
-    const missions = await MissionManager.getActiveMissions(user.id);
+    if (!currentUser) return;
+    const missions = await MissionManager.getActiveMissions(currentUser.id);
     setActiveMissions(missions);
   };
 
-  const initializeApp = async () => {
-    try {
-      // Initialize database
-      await initDatabase();
-
-      // Seed data - checks are now internal to these functions
-      await seedDatabase();
-      await seedMissions();
-      // Auto-fill missions for games that have none (User Request)
-      await fillMissingMissions();
-      // Sync mission descriptions with new detailed templates (User Request)
-      await syncMissionDescriptions();
-
-      // Load user ONLY if session exists
-      const storedUser = localStorage.getItem('gda-currentUser');
-      if (storedUser) {
-        const users = await dbOperations.getAll('users');
-        // In a real app we'd verify ID/token, for demo we just check if user exists
-        const currentUser = users.find(u => u.id === JSON.parse(storedUser).id) || users[0];
-        if (currentUser) {
-          setUser(currentUser);
-        }
-      } else {
-        // No session, ensures we stay on login screen
-        setUser(null);
-      }
-
-      // Load games and missions to calculate counts
-      const [allGames, allMissions] = await Promise.all([
-        dbOperations.getAll('games'),
-        dbOperations.getAll('missions')
-      ]);
-
-      // Calculate mission counts per game
-      const gamesWithCounts = allGames.map(game => {
-        const gameMissions = allMissions.filter(m => m.gameId === game.id);
-        return {
-          ...game,
-          missionCount: gameMissions.length
-        };
-      });
-
-      setGames(gamesWithCounts);
-      setLoading(false);
-    } catch (error) {
-      console.error('Error initializing app:', error);
-      // Fallback load
-      try {
-        const users = await dbOperations.getAll('users');
-        if (users.length > 0) setUser(users[0]);
-
-        const allGames = await dbOperations.getAll('games');
-        setGames(allGames); // Without counts if missions fail
-      } catch (e) {
-        console.error('Fallback failed', e);
-      }
-      setLoading(false);
-    }
-  };
-
-  // Expose reset function for user convenience
-  useEffect(() => {
-    window.resetDatabase = async () => {
-      if (confirm('Tüm veriler silinecek ve başlangıç verileri yüklenecek. Emin misiniz?')) {
-        await dbOperations.clearDatabase();
-        window.location.reload();
-      }
-    };
-    console.log('💡 Geliştirici: Veritabanını sıfırlamak için konsola "window.resetDatabase()" yazabilirsiniz.');
-    window.clearAndReseed = window.resetDatabase;
-  }, []);
-
+  // ... Handlers (GameSelect, etc) ...
   const handleGameSelect = (game) => {
-    console.log('Selected game:', game);
-    setSelectedGame(game);
-    setCurrentPage('game-details');
+    const safeName = (game.title || game.name || 'Unknown').replace(/ /g, '_');
+    navigate(`/Games/${safeName}`);
   };
-
-  const handleBackToGames = () => {
-    setSelectedGame(null);
-    setCurrentPage('games');
-  };
-
+  const handleBackToGames = () => navigate('/Games');
   const handleMissionSelect = (mission) => {
     setSelectedMission(mission);
     setShowMissionDetail(true);
   };
+  const handleAcceptMission = async () => loadActiveMissions();
 
-  const handleAcceptMission = async () => {
-    await loadActiveMissions();
-  };
-
-  const handleMissionSubmit = (mission) => {
-    setSubmittingMission(mission);
-  };
-
-  // FTUE Handlers
-  const handleLogin = (loggedInUser) => {
-    localStorage.setItem('gda-currentUser', JSON.stringify(loggedInUser));
-    setUser(loggedInUser);
-    setLoading(false);
-  };
-
+  // Onboarding
   const handleOnboardingComplete = async () => {
-    // Reload user from database to get updated onboarding status
-    try {
-      const users = await dbOperations.getAll('users');
-      const updatedUser = users.find(u => u.id === user.id);
-      if (updatedUser) {
-        setUser(updatedUser);
-      }
-      setShowOnboardingLoader(true);
-    } catch (error) {
-      console.error('Error reloading user:', error);
-      setShowOnboardingLoader(true); // Show loader anyway
-    }
-  };
-
-  const handleLoaderComplete = () => {
-    setShowOnboardingLoader(false);
-  };
-
-  const handleSubmissionComplete = async () => {
-    setSubmittingMission(null);
-    await loadActiveMissions();
-
-    // Trigger AI Assistant with proactive message
+    setShowOnboardingLoader(true);
+    await refreshUser(); // Refresh user state from DB to reflect 'hasCompletedOnboarding: true'
+    // Optional: wait a bit for loader effect
     setTimeout(() => {
-      if (window.triggerAIAssistant) {
-        window.triggerAIAssistant('afterCaseCompletion');
-      }
+      setShowOnboardingLoader(false);
     }, 2000);
-    alert(`Submission successful! AI feedback will arrive in your inbox.`);
   };
 
-  // Subscription Handlers
-  const handleSubscriptionSelect = (plan) => {
-    setSelectedPlan(plan);
-    setCurrentPage('checkout');
-  };
+  if (loading) return <div className="loading-screen"><div className="loading-spinner"></div></div>;
 
-  const handleCheckoutComplete = () => {
-    // Refresh user data to show new subscription
-    if (user) {
-      // Re-fetch user to get updated subscription tier
-      dbOperations.get('users', user.id).then(updatedUser => {
-        if (updatedUser) setUser(updatedUser);
-      });
-    }
-    setCurrentPage('dashboard');
-  };
+  // Admin Route Handling
+  if (isAdminAuthenticated) return <AdminPanel />;
 
-  if (loading) {
+  // Protected Routes Check
+  // If not logged in, only allow Login routes
+  if (!currentUser) {
     return (
-      <div className="loading-screen">
-        <div className="loading-spinner"></div>
-        <div className="loading-text">Initializing GDA Hub...</div>
-      </div>
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/admin" element={<LoginAdmin />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
     );
   }
 
-  // If admin is authenticated, show admin panel
-  if (isAdminAuthenticated) {
-    return <AdminPanel />;
+  // Onboarding Check
+  if (!currentUser.hasCompletedOnboarding && !currentUser.role?.includes('admin')) {
+    // Logic for onboarding
+    return <Onboarding userId={currentUser.id} onComplete={handleOnboardingComplete} />;
+    // Note: Onboarding component needs to update DB.
   }
 
-  // FTUE Flow: Check authentication and onboarding status
-  if (!user) {
-    return <Login onLogin={handleLogin} />;
-  }
+  if (showOnboardingLoader) return <OnboardingLoader onComplete={() => setShowOnboardingLoader(false)} />;
 
-  if (user && !user.hasCompletedOnboarding) {
-    return <Onboarding userId={user.id} onComplete={handleOnboardingComplete} />;
-  }
-
-  if (showOnboardingLoader) {
-    return <OnboardingLoader onComplete={handleLoaderComplete} />;
-  }
-
-  // Main App (after FTUE)
+  // Main App
   return (
     <div className="app">
-      {/* Desktop Sidebar */}
-      <Sidebar
-        user={user}
-        currentPage={currentPage}
-        onNavigate={setCurrentPage}
-        onLogout={() => {
-          localStorage.removeItem('gda-currentUser');
-          window.location.reload();
-        }}
-      />
-
-      {/* Main Content */}
+      <Sidebar user={currentUser} onLogout={logout} />
       <main className="main-content">
         <div className="page-container">
-          {currentPage === 'dashboard' && (
-            <div className="dashboard-page">
-              <Dashboard
-                user={user}
-                onGameBrowse={() => setCurrentPage('games')}
-                onMissionSelect={handleMissionSelect}
-              />
-            </div>
-          )}
-
-          {currentPage === 'games' && (
-            <div className="games-page">
-              <GameGrid games={games} onGameSelect={handleGameSelect} />
-            </div>
-          )}
-
-          {currentPage === 'game-details' && selectedGame && (
-            <div className="game-details-page">
-              <GameDetails
-                game={selectedGame}
-                onBack={handleBackToGames}
-                onMissionSelect={handleMissionSelect}
-              />
-            </div>
-          )}
-
-          {currentPage === 'missions' && (
-            <div className="missions-page">
-              <MissionBrowser
-                userId={user?.id}
-                onMissionSelect={handleMissionSelect}
-              />
-            </div>
-          )}
-
-          {currentPage === 'submissions' && (
-            <div className="submissions-page">
-              <div className="page-header">
-                <h1>My Submissions</h1>
-                <p className="page-description">
-                  View all your completed case studies and their feedback
-                </p>
-              </div>
-              <p>Submissions feature coming soon...</p>
-            </div>
-          )}
-
-          {currentPage === 'profile' && (
-            <div className="profile-page">
-              <Profile userId={user?.id} />
-            </div>
-          )}
-
-          {currentPage === 'inbox' && (
-            <div className="inbox-page">
-              <Inbox userId={user?.id} />
-            </div>
-          )}
-
-          {currentPage === 'leaderboard' && (
-            <div className="leaderboard-page">
-              <div className="page-header">
-                <h1>Leaderboard</h1>
-                <p className="page-description">
-                  Top designers in the GDA community
-                </p>
-              </div>
-              <div className="coming-soon">
-                <div className="coming-soon-icon">🏆</div>
-                <div className="coming-soon-text">Leaderboard coming soon!</div>
-              </div>
-            </div>
-          )}
-
-          {currentPage === 'community' && (
-            <Community user={user} />
-          )}
-
-          {currentPage === 'bridge' && (
-            <GDABridge user={user} />
-          )}
-
-          {currentPage === 'subscription' && (
-            <Subscription onSelectPlan={handleSubscriptionSelect} />
-          )}
-
-          {currentPage === 'checkout' && (
-            <Checkout
-              plan={selectedPlan}
-              user={user}
-              onBack={() => setCurrentPage('subscription')}
-              onComplete={handleCheckoutComplete}
-            />
-          )}
-
+          <AnimatePresence mode="wait">
+            <Routes location={location} key={location.pathname}>
+              <Route path="/" element={<Navigate to="/Dashboard" replace />} />
+              <Route path="/Dashboard" element={<PageWrapper className="dashboard-page"><Dashboard user={currentUser} onGameBrowse={() => navigate('/Games')} onMissionSelect={handleMissionSelect} /></PageWrapper>} />
+              <Route path="/Games" element={<PageWrapper className="games-page"><GameGrid games={games} onGameSelect={handleGameSelect} /></PageWrapper>} />
+              <Route path="/Games/:gameName" element={<PageWrapper className="game-details-page"><GameDetailsWrapper games={games} onBack={handleBackToGames} onMissionSelect={handleMissionSelect} /></PageWrapper>} />
+              <Route path="/Missions" element={<PageWrapper className="missions-page"><MissionBrowser userId={currentUser.id} onMissionSelect={handleMissionSelect} /></PageWrapper>} />
+              <Route path="/Community/*" element={<PageWrapper><Community user={currentUser} /></PageWrapper>} />
+              <Route path="/Profile" element={<PageWrapper className="profile-page"><Profile userId={currentUser.id} /></PageWrapper>} />
+              <Route path="/Inbox" element={<PageWrapper className="inbox-page"><Inbox userId={currentUser.id} /></PageWrapper>} />
+              <Route path="/Subscription" element={<PageWrapper><Subscription onSelectPlan={(plan) => { setSelectedPlan(plan); navigate('/Checkout'); }} /></PageWrapper>} />
+              <Route path="/Checkout" element={<PageWrapper><Checkout plan={selectedPlan} user={currentUser} refreshUser={refreshUser} onBack={() => navigate('/Subscription')} onComplete={() => navigate('/Dashboard')} /></PageWrapper>} />
+              <Route path="/GDA_Bridge" element={<PageWrapper><GDABridge user={currentUser} /></PageWrapper>} />
+              <Route path="*" element={<Navigate to="/Dashboard" replace />} />
+            </Routes>
+          </AnimatePresence>
         </div>
-      </main >
-
-      {/* Mobile Bottom Navigation */}
-      < BottomNav currentPage={currentPage} onNavigate={setCurrentPage} />
-
-      {/* Mission Detail Modal */}
-      {
-        showMissionDetail && selectedMission && (
-          <MissionDetail
-            mission={selectedMission}
-            userId={user?.id}
-            onClose={() => setShowMissionDetail(false)}
-            onAccept={handleAcceptMission}
-          />
-        )
-      }
-
-      {/* Submission Form Modal */}
-      {
-        submittingMission && (
-          <SubmissionForm
-            mission={submittingMission}
-            userId={user?.id}
-            onClose={() => setSubmittingMission(null)}
-            onSubmit={handleSubmissionComplete}
-          />
-        )
-      }
-
-      {/* AI Assistant - Always visible */}
+      </main>
+      {showMissionDetail && selectedMission && <MissionDetail mission={selectedMission} userId={currentUser.id} onClose={() => setShowMissionDetail(false)} onAccept={handleAcceptMission} />}
+      {submittingMission && <SubmissionForm mission={submittingMission} userId={currentUser.id} onClose={() => setSubmittingMission(null)} onSubmit={async () => { setSubmittingMission(null); await loadActiveMissions(); }} />}
       <AIAssistant />
-    </div >
+    </div>
   );
-}
+};
+
+const App = () => {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
+  );
+};
 
 export default App;

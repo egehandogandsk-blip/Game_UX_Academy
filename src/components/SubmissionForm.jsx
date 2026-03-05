@@ -3,7 +3,9 @@ import { MissionManager } from '../utils/missionManager.js';
 import './SubmissionForm.css';
 
 const SubmissionForm = ({ mission, userId, onClose, onSubmit }) => {
+    const [submissionType, setSubmissionType] = useState('image'); // 'image' or 'link'
     const [images, setImages] = useState([]);
+    const [figmaLink, setFigmaLink] = useState('');
     const [description, setDescription] = useState('');
     const [uploading, setUploading] = useState(false);
     const [dragActive, setDragActive] = useState(false);
@@ -51,17 +53,34 @@ const SubmissionForm = ({ mission, userId, onClose, onSubmit }) => {
             };
             reader.readAsDataURL(file);
         });
+
+        // Auto-switch to image mode if files are dropped
+        setSubmissionType('image');
+        setFigmaLink(''); // Clear link
     };
 
     const removeImage = (index) => {
         setImages(prev => prev.filter((_, i) => i !== index));
     };
 
+    const handleLinkChange = (e) => {
+        setFigmaLink(e.target.value);
+        if (e.target.value) {
+            setSubmissionType('link');
+            setImages([]); // Clear images
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        if (images.length === 0) {
-            alert('Please upload at least one design mockup');
+        if (submissionType === 'image' && images.length === 0) {
+            alert('Lütfen en az bir görsel yükleyin.');
+            return;
+        }
+
+        if (submissionType === 'link' && !figmaLink) {
+            alert('Lütfen geçerli bir Figma linki girin.');
             return;
         }
 
@@ -69,20 +88,21 @@ const SubmissionForm = ({ mission, userId, onClose, onSubmit }) => {
 
         // Create submission data
         const submissionData = {
-            images: images.map(img => img.preview), // In production, upload to cloud storage
-            description
+            type: submissionType,
+            images: submissionType === 'image' ? images.map(img => img.preview) : [],
+            link: submissionType === 'link' ? figmaLink : null,
+            description,
+            timestamp: new Date().toISOString()
         };
 
-        const result = await MissionManager.submitMission(userId, mission.id, submissionData);
-
-        setUploading(false);
-
-        if (result.success) {
-            if (onSubmit) onSubmit(result);
-            onClose();
-        } else {
-            alert('Failed to submit mission: ' + result.error);
+        // If onSubmit is provided (which it is), call it with the data
+        // The parent (Profile) will handle the actual DB saving and AI call
+        if (onSubmit) {
+            await onSubmit(submissionData);
         }
+
+        onClose();
+        setUploading(false);
     };
 
     return (
@@ -96,65 +116,109 @@ const SubmissionForm = ({ mission, userId, onClose, onSubmit }) => {
                 <div className="submission-layout">
                     {/* Reference Side */}
                     <div className="submission-reference">
-                        <h3>Original Design</h3>
+                        <h3>Original Design / Reference</h3>
                         {mission.referenceImages && mission.referenceImages[0] ? (
                             <div className="reference-display">
-                                <img
-                                    src={mission.referenceImages[0]}
-                                    alt="Original design reference"
-                                />
+                                <img src={mission.referenceImages[0]} alt="Reference" />
+                            </div>
+                        ) : mission.game?.coverImage ? (
+                            <div className="reference-display">
+                                <img src={mission.game.coverImage} alt="Reference" />
                             </div>
                         ) : (
                             <div className="no-reference">No reference available</div>
                         )}
+
+                        <div className="mission-requirements-mini">
+                            <h4>Requirements</h4>
+                            <ul>
+                                {mission.requirements?.slice(0, 3).map((req, i) => (
+                                    <li key={i}>{req}</li>
+                                ))}
+                            </ul>
+                        </div>
                     </div>
 
                     {/* Submission Side */}
                     <div className="submission-work">
-                        <h3>Your Design</h3>
+                        <h3>Submission Type</h3>
+
+                        {/* Toggle Controls */}
+                        <div className="submission-type-toggle">
+                            <button
+                                type="button"
+                                className={`type-btn ${submissionType === 'image' ? 'active' : ''}`}
+                                onClick={() => { setSubmissionType('image'); setFigmaLink(''); }}
+                            >
+                                🖼️ Image Upload
+                            </button>
+                            <button
+                                type="button"
+                                className={`type-btn ${submissionType === 'link' ? 'active' : ''}`}
+                                onClick={() => { setSubmissionType('link'); setImages([]); }}
+                            >
+                                🔗 Figma Link
+                            </button>
+                        </div>
 
                         <form onSubmit={handleSubmit}>
-                            {/* Upload Area */}
-                            <div
-                                className={`upload-area ${dragActive ? 'drag-active' : ''}`}
-                                onDragEnter={handleDrag}
-                                onDragLeave={handleDrag}
-                                onDragOver={handleDrag}
-                                onDrop={handleDrop}
-                                onClick={() => fileInputRef.current?.click()}
-                            >
-                                <input
-                                    ref={fileInputRef}
-                                    type="file"
-                                    multiple
-                                    accept="image/*"
-                                    onChange={handleChange}
-                                    style={{ display: 'none' }}
-                                />
-                                <div className="upload-icon">📤</div>
-                                <div className="upload-text">
-                                    Drag and drop images here or click to browse
-                                </div>
-                                <div className="upload-hint">
-                                    Supports PNG, JPG, WebP (max 10MB each)
-                                </div>
-                            </div>
-
-                            {/* Image Previews */}
-                            {images.length > 0 && (
-                                <div className="image-previews">
-                                    {images.map((img, index) => (
-                                        <div key={index} className="image-preview">
-                                            <img src={img.preview} alt={`Upload ${index + 1}`} />
-                                            <button
-                                                type="button"
-                                                className="remove-image"
-                                                onClick={() => removeImage(index)}
-                                            >
-                                                ✕
-                                            </button>
+                            {/* Option 1: Image Upload */}
+                            {submissionType === 'image' && (
+                                <div className="input-section fade-in">
+                                    <div
+                                        className={`upload-area ${dragActive ? 'drag-active' : ''}`}
+                                        onDragEnter={handleDrag}
+                                        onDragLeave={handleDrag}
+                                        onDragOver={handleDrag}
+                                        onDrop={handleDrop}
+                                        onClick={() => fileInputRef.current?.click()}
+                                    >
+                                        <input
+                                            ref={fileInputRef}
+                                            type="file"
+                                            multiple
+                                            accept="image/*"
+                                            onChange={handleChange}
+                                            style={{ display: 'none' }}
+                                        />
+                                        <div className="upload-icon">📤</div>
+                                        <div className="upload-text">
+                                            Drag & drop visuals here
                                         </div>
-                                    ))}
+                                    </div>
+
+                                    {/* Previews */}
+                                    {images.length > 0 && (
+                                        <div className="image-previews">
+                                            {images.map((img, index) => (
+                                                <div key={index} className="image-preview">
+                                                    <img src={img.preview} alt={`Upload ${index + 1}`} />
+                                                    <button
+                                                        type="button"
+                                                        className="remove-image"
+                                                        onClick={(e) => { e.stopPropagation(); removeImage(index); }}
+                                                    >
+                                                        ✕
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Option 2: Figma Link */}
+                            {submissionType === 'link' && (
+                                <div className="input-section fade-in">
+                                    <label>Figma File URL</label>
+                                    <input
+                                        type="url"
+                                        className="input-field"
+                                        placeholder="https://www.figma.com/file/..."
+                                        value={figmaLink}
+                                        onChange={handleLinkChange}
+                                    />
+                                    <p className="input-hint">Make sure the link is accessible (Public or Viewer perms).</p>
                                 </div>
                             )}
 
@@ -164,8 +228,8 @@ const SubmissionForm = ({ mission, userId, onClose, onSubmit }) => {
                                 <textarea
                                     value={description}
                                     onChange={(e) => setDescription(e.target.value)}
-                                    placeholder="Explain your design decisions, what problems you solved, and what improvements you made..."
-                                    rows={6}
+                                    placeholder="Briefly explain your design decisions..."
+                                    rows={4}
                                 />
                             </div>
 
@@ -181,9 +245,9 @@ const SubmissionForm = ({ mission, userId, onClose, onSubmit }) => {
                                 <button
                                     type="submit"
                                     className="btn btn-primary btn-lg"
-                                    disabled={uploading || images.length === 0}
+                                    disabled={uploading}
                                 >
-                                    {uploading ? 'Submitting...' : 'Submit for AI Analysis'}
+                                    {uploading ? 'Analyzing...' : 'Submit to AI Analysis ✨'}
                                 </button>
                             </div>
                         </form>

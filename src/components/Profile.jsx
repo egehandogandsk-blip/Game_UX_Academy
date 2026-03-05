@@ -1,14 +1,47 @@
 import React, { useState, useEffect } from 'react';
 import { dbOperations } from '../database/schema';
+import { MissionManager } from '../utils/missionManager.js';
+import { analyzeSubmission } from '../utils/AIAnalysisService.js';
+import SubmissionForm from './SubmissionForm';
+import AnalysisResultModal from './AnalysisResultModal';
 import { badgedata } from '../data/badges';
-import './Profile.css';
+import { motion } from 'framer-motion';
+import './Profile.styles.css';
+
+const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+        opacity: 1,
+        transition: {
+            staggerChildren: 0.15
+        }
+    }
+};
+
+const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+        y: 0,
+        opacity: 1,
+        transition: { type: "spring", stiffness: 100, damping: 20 }
+    }
+};
 
 const Profile = ({ userId }) => {
     const [user, setUser] = useState(null);
     const [isEditing, setIsEditing] = useState(false);
     const [editData, setEditData] = useState(null);
+
+    // Mission States
+    const [activeMissions, setActiveMissions] = useState([]);
     const [completedMissions, setCompletedMissions] = useState([]);
-    const [feedbacks, setFeedbacks] = useState([]);
+
+    // Modals
+    const [showSubmissionForm, setShowSubmissionForm] = useState(false);
+    const [currentMissionToSubmit, setCurrentMissionToSubmit] = useState(null);
+    const [analysisResult, setAnalysisResult] = useState(null);
+    const [analyzingSubmission, setAnalyzingSubmission] = useState(null); // The submission being analyzed
+
     const [loading, setLoading] = useState(true);
 
     // Social platform metadata
@@ -27,12 +60,6 @@ const Profile = ({ userId }) => {
         { key: 'medium', label: 'Medium', icon: '✍️', baseUrl: 'https://medium.com/@' }
     ];
 
-    const softwareOptions = [
-        'Figma', 'Adobe XD', 'Sketch', 'Photoshop', 'Illustrator',
-        'After Effects', 'Unity', 'Unreal Engine', 'Blender',
-        'InVision', 'Principle', 'Framer'
-    ];
-
     const loadUserData = async () => {
         try {
             const users = await dbOperations.getAll('users');
@@ -40,17 +67,14 @@ const Profile = ({ userId }) => {
             setUser(userData);
             setEditData(userData);
 
-            // Load completed missions (submissions with status 'completed')
-            const submissions = await dbOperations.getAll('submissions');
-            const userSubmissions = submissions.filter(s => s.userId === userId);
-            setCompletedMissions(userSubmissions);
+            // Load Active Missions
+            const active = await MissionManager.getActiveMissions(userId);
+            setActiveMissions(active);
 
-            // Load feedback
-            const allFeedback = await dbOperations.getAll('ai_feedback');
-            const userFeedback = allFeedback.filter(f =>
-                userSubmissions.some(s => s.id === f.submissionId)
-            );
-            setFeedbacks(userFeedback);
+            // Load Completed Missions
+            const submissions = await dbOperations.getAll('submissions');
+            const userSubmissions = submissions.filter(s => s.userId === userId && s.status === 'completed');
+            setCompletedMissions(userSubmissions);
 
             setLoading(false);
         } catch (error) {
@@ -86,26 +110,90 @@ const Profile = ({ userId }) => {
         }
     };
 
-    // Photo upload handlers
-    const handleCoverPhotoUpload = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            if (file.size > 5 * 1024 * 1024) { // 5MB limit
-                alert('File size must be less than 5MB');
-                return;
-            }
+    // Submission Handlers
+    const openSubmissionForm = (mission) => {
+        setCurrentMissionToSubmit(mission);
+        setShowSubmissionForm(true);
+    };
 
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setEditData({
-                    ...editData,
-                    coverPhoto: reader.result
-                });
-            };
-            reader.readAsDataURL(file);
+    const handleSubmission = async (submissionData) => {
+        // 1. Trigger AI Notification logic (Mock)
+        if (window.triggerAIAssistant) {
+            window.triggerAIAssistant('submission_processing');
+        }
+
+        // 2. Perform Analysis
+        const analysis = await analyzeSubmission(submissionData);
+        setAnalysisResult(analysis);
+
+        // Store submission details temporarily to complete later
+        setAnalyzingSubmission({
+            mission: currentMissionToSubmit,
+            data: submissionData,
+            analysis: analysis
+        });
+
+        // 3. Notify User
+        if (window.triggerAIAssistant) {
+            window.triggerAIAssistant('analysis_ready', {
+                score: analysis.score,
+                onClick: () => setAnalysisResult(analysis) // Re-open modal if closed
+            });
         }
     };
 
+    const completeMission = async () => {
+        if (!analyzingSubmission) return;
+
+        try {
+            const { mission, data, analysis } = analyzingSubmission;
+
+            // Save Submission to DB
+            const submissionRecord = {
+                userId,
+                missionId: mission.id,
+                missionTitle: mission.type, // or mission.title if available
+                gameTitle: mission.game?.title,
+                images: data.images,
+                link: data.link,
+                description: data.description,
+                status: 'completed',
+                score: analysis.score,
+                analysisSummary: analysis.summary,
+                submittedAt: new Date().toISOString()
+            };
+
+            const subResult = await MissionManager.submitMission(userId, mission.id, submissionRecord);
+
+            if (subResult.success) {
+                // Save Detailed Feedback
+                await dbOperations.add('ai_feedback', {
+                    submissionId: subResult.id,
+                    overallScore: analysis.score,
+                    heatmapData: analysis.heatmapData,
+                    feedback: analysis.feedback,
+                    createdAt: new Date().toISOString()
+                });
+
+                // Update User XP
+                const newXp = (user.xp || 0) + (mission.xp || 100);
+                await dbOperations.update('users', userId, { ...user, xp: newXp });
+
+                // Refresh Data
+                await loadUserData();
+
+                // Close Modals
+                setAnalysisResult(null);
+                setAnalyzingSubmission(null);
+                alert(`Mission Completed! +${mission.xp || 100} XP Earned! 🚀`);
+            }
+        } catch (error) {
+            console.error("Completion Error", error);
+            alert("Failed to save mission completion.");
+        }
+    };
+
+    // Photo upload handlers
     const handleProfilePhotoUpload = (e) => {
         const file = e.target.files[0];
         if (file) {
@@ -135,18 +223,6 @@ const Profile = ({ userId }) => {
         });
     };
 
-    const toggleSoftware = (software) => {
-        const currentSoftware = editData.favoriteSoftware || [];
-        const newSoftware = currentSoftware.includes(software)
-            ? currentSoftware.filter(s => s !== software)
-            : [...currentSoftware, software];
-
-        setEditData({
-            ...editData,
-            favoriteSoftware: newSoftware
-        });
-    };
-
     if (loading) {
         return (
             <div className="profile-loading">
@@ -167,130 +243,115 @@ const Profile = ({ userId }) => {
     const displayData = isEditing ? editData : user;
 
     return (
-        <div className="profile-container">
-            {/* Edit/Save Controls */}
-            <div className="profile-controls">
-                {!isEditing ? (
-                    <button className="btn-edit-profile" onClick={handleEdit}>
-                        ✏️ Edit Profile
-                    </button>
-                ) : (
-                    <div className="edit-controls">
-                        <button className="btn btn-secondary" onClick={handleCancel}>
-                            Cancel
-                        </button>
-                        <button className="btn btn-primary" onClick={handleSave}>
-                            💾 Save Changes
-                        </button>
-                    </div>
-                )}
-            </div>
+        <motion.div
+            className="profile-container"
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+        >
 
-            {/* Cover Photo */}
-            <div className="profile-cover">
-                {displayData.coverPhoto ? (
-                    <img src={displayData.coverPhoto} alt="Cover" />
-                ) : (
-                    <div className="cover-placeholder">
-                        <span>📷</span>
-                        {isEditing && <p>Upload a cover photo</p>}
-                    </div>
-                )}
-                {isEditing && (
-                    <div className="cover-upload">
-                        <label htmlFor="cover-upload" className="upload-btn">
-                            📷 Upload Cover Photo
-                            <input
-                                id="cover-upload"
-                                type="file"
-                                accept="image/*"
-                                onChange={handleCoverPhotoUpload}
-                                style={{ display: 'none' }}
-                            />
-                        </label>
-                        {editData.coverPhoto && (
-                            <button
-                                className="remove-btn"
-                                onClick={() => setEditData({ ...editData, coverPhoto: '' })}
-                            >
-                                ✕ Remove
+            {/* Profile Header Area */}
+            <motion.div className="profile-header-wrapper" variants={itemVariants}>
+                {/* Clean Profile Card */}
+                <div className="profile-glass-card glass-strong">
+                    {/* Header Controls Inside Card */}
+                    <div className="profile-card-controls">
+                        {!isEditing ? (
+                            <button className="btn-edit-profile-mini" onClick={handleEdit}>
+                                ✏️ Edit
                             </button>
+                        ) : (
+                            <div className="edit-controls-mini">
+                                <button className="btn-glass-secondary" onClick={handleCancel}>
+                                    Cancel
+                                </button>
+                                <button className="btn-glass-primary" onClick={handleSave}>
+                                    💾 Save
+                                </button>
+                            </div>
                         )}
                     </div>
-                )}
-            </div>
 
-            {/* Profile Header */}
-            <div className="profile-header">
-                <div className="profile-photo-container">
-                    {displayData.profilePhoto ? (
-                        <img src={displayData.profilePhoto} alt="Profile" className="profile-photo" />
-                    ) : (
-                        <div className="profile-photo-placeholder">
-                            <span>👤</span>
-                        </div>
-                    )}
-                    {isEditing && (
-                        <div className="photo-upload-controls">
-                            <label htmlFor="profile-upload" className="upload-btn upload-btn-small">
-                                📷 Upload Photo
-                                <input
-                                    id="profile-upload"
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={handleProfilePhotoUpload}
-                                    style={{ display: 'none' }}
-                                />
-                            </label>
-                            {editData.profilePhoto && (
-                                <button
-                                    className="remove-btn remove-btn-small"
-                                    onClick={() => setEditData({ ...editData, profilePhoto: '' })}
-                                >
-                                    ✕
-                                </button>
+                    <div className="profile-photo-wrapper">
+                        <div className="profile-photo-container">
+                            {displayData.profilePhoto ? (
+                                <img src={displayData.profilePhoto} alt="Profile" className="profile-photo" />
+                            ) : (
+                                <div className="profile-photo-placeholder">
+                                    <span>{displayData.fullName?.[0]?.toUpperCase() || '👤'}</span>
+                                </div>
+                            )}
+                            {isEditing && (
+                                <label htmlFor="profile-upload" className="photo-upload-trigger">
+                                    📸
+                                    <input
+                                        id="profile-upload"
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={handleProfilePhotoUpload}
+                                        style={{ display: 'none' }}
+                                    />
+                                </label>
                             )}
                         </div>
-                    )}
-                </div>
-
-                <div className="profile-info">
-                    {isEditing ? (
-                        <input
-                            type="text"
-                            className="input profile-name-input"
-                            value={editData.fullName || ''}
-                            onChange={(e) => setEditData({ ...editData, fullName: e.target.value })}
-                            placeholder="Your full name"
-                        />
-                    ) : (
-                        <h1 className="profile-name">{displayData.fullName || 'Anonymous User'}</h1>
-                    )}
-
-                    <div className="profile-badges">
-                        <span className="badge badge-work">{displayData.workField || 'Designer'}</span>
-                        <span className="badge badge-level">Level {displayData.level || 1}</span>
-                        <span className="badge badge-xp">{displayData.xp || 0} XP</span>
+                        {user?.subscriptionTier && user.subscriptionTier !== 'Free' && (
+                            <div className="tier-badge-floating" title={user.subscriptionTier}>
+                                ★
+                            </div>
+                        )}
                     </div>
 
-                    {isEditing ? (
-                        <textarea
-                            className="input bio-input"
-                            value={editData.bio || ''}
-                            onChange={(e) => setEditData({ ...editData, bio: e.target.value })}
-                            placeholder="Tell us about yourself..."
-                            rows="3"
-                        />
-                    ) : displayData.bio ? (
-                        <p className="profile-bio">{displayData.bio}</p>
-                    ) : (
-                        <p className="profile-bio-empty">No bio yet</p>
-                    )}
+                    <div className="profile-main-info">
+                        <div className="profile-name-row">
+                            {isEditing ? (
+                                <input
+                                    type="text"
+                                    className="input profile-name-input"
+                                    value={editData.fullName || ''}
+                                    onChange={(e) => setEditData({ ...editData, fullName: e.target.value })}
+                                    placeholder="Your full name"
+                                />
+                            ) : (
+                                <h1 className="profile-name">{displayData.fullName || 'Anonymous User'}</h1>
+                            )}
+                        </div>
+
+                        <div className="profile-badges-row">
+                            <span className="premium-badge badge-work">
+                                <span className="badge-icon">💼</span>
+                                {displayData.workField || 'Designer'}
+                            </span>
+                            <span className="premium-badge badge-level">
+                                <span className="badge-icon">⭐</span>
+                                Level {displayData.level || 1}
+                            </span>
+                            <span className="premium-badge badge-xp">
+                                <span className="badge-icon">⚡</span>
+                                {displayData.xp || 0} XP
+                            </span>
+                        </div>
+
+                        <div className="profile-bio-container">
+                            {isEditing ? (
+                                <textarea
+                                    className="input bio-input"
+                                    value={editData.bio || ''}
+                                    onChange={(e) => setEditData({ ...editData, bio: e.target.value })}
+                                    placeholder="Write a short bio about your professional journey..."
+                                    rows="2"
+                                />
+                            ) : displayData.bio ? (
+                                <p className="profile-bio">{displayData.bio}</p>
+                            ) : (
+                                <p className="profile-bio-empty">Aspiring Game Industry Professional</p>
+                            )}
+                        </div>
+                    </div>
                 </div>
-            </div>
+            </motion.div>
 
             {user?.badges && user.badges.length > 0 && (
-                <div className="profile-latest-badges">
+                <motion.div className="profile-latest-badges glass" variants={itemVariants}>
                     <span className="latest-badges-title">Latest:</span>
                     {user.badges.slice(-5).reverse().map(badgeId => {
                         const badge = badgedata.find(b => b.id === badgeId);
@@ -301,11 +362,42 @@ const Profile = ({ userId }) => {
                             </div>
                         );
                     })}
-                </div>
+                </motion.div>
             )}
 
+            {/* ACTIVE MISSIONS - NEW SECTION */}
+            <motion.div className="profile-section active-missions-section" variants={itemVariants}>
+                <h2>🚀 Active Missions</h2>
+                {activeMissions.length > 0 ? (
+                    <div className="missions-grid">
+                        {activeMissions.map(mission => (
+                            <div key={mission.id} className="mission-card-active glass-hover">
+                                <div className="mission-active-header">
+                                    <h4>{mission.type}</h4>
+                                    <span className="mission-game-tag">{mission.game?.title}</span>
+                                </div>
+                                <div className="mission-active-meta">
+                                    <span>⏱️ {mission.estimatedTime}</span>
+                                    <span>⚡ {mission.xp} XP</span>
+                                </div>
+                                <button
+                                    className="btn btn-primary btn-sm btn-submit-mission"
+                                    onClick={() => openSubmissionForm(mission)}
+                                >
+                                    📤 Submit Work
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="section-empty">
+                        <p>No active missions. Visit the Mission Center to pick one up!</p>
+                    </div>
+                )}
+            </motion.div>
+
             {/* BADGE COLLECTION - FULL GRID */}
-            <div className="profile-section">
+            <motion.div className="profile-section" variants={itemVariants}>
                 <h2>🏆 Badge Collection ({user?.badges?.length || 0}/50)</h2>
                 <div className="badge-collection-grid">
                     {badgedata.map(badge => {
@@ -319,15 +411,14 @@ const Profile = ({ userId }) => {
                         );
                     })}
                 </div>
-            </div>
+            </motion.div>
 
             {/* Settings Section - Only visible in edit mode */}
             {isEditing && (
-                <div className="profile-section settings-section">
+                <motion.div className="profile-section settings-section" variants={itemVariants}>
                     <h2>⚙️ Account Settings</h2>
-
                     <div className="settings-grid">
-                        {/* Account Information */}
+                        {/* Information Fields... (Same as before) */}
                         <div className="settings-group">
                             <h3 className="settings-group-title">👤 Account Information</h3>
                             <div className="setting-item">
@@ -352,7 +443,6 @@ const Profile = ({ userId }) => {
                             </div>
                         </div>
 
-                        {/* Career Information */}
                         <div className="settings-group">
                             <h3 className="settings-group-title">💼 Career Information</h3>
                             <div className="setting-item">
@@ -371,59 +461,18 @@ const Profile = ({ userId }) => {
                                     <option value="Other">Other</option>
                                 </select>
                             </div>
-                            <div className="setting-item">
-                                <label>GDA Education</label>
-                                <div className="toggle-group-inline">
-                                    <button
-                                        type="button"
-                                        className={`toggle-option ${!editData.hasGDAEducation ? 'active' : ''}`}
-                                        onClick={() => setEditData({ ...editData, hasGDAEducation: false })}
-                                    >
-                                        No
-                                    </button>
-                                    <button
-                                        type="button"
-                                        className={`toggle-option ${editData.hasGDAEducation ? 'active' : ''}`}
-                                        onClick={() => setEditData({ ...editData, hasGDAEducation: true })}
-                                    >
-                                        Yes
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Privacy & Preferences */}
-                        <div className="settings-group">
-                            <h3 className="settings-group-title">🔒 Privacy & Preferences</h3>
-                            <div className="setting-item">
-                                <label>Profile Visibility</label>
-                                <select className="input">
-                                    <option value="public">Public</option>
-                                    <option value="private">Private</option>
-                                    <option value="friends">Friends Only</option>
-                                </select>
-                            </div>
-                            <div className="setting-item">
-                                <label>Email Notifications</label>
-                                <div className="toggle-group-inline">
-                                    <button type="button" className="toggle-option active">On</button>
-                                    <button type="button" className="toggle-option">Off</button>
-                                </div>
-                            </div>
                         </div>
                     </div>
-                </div>
+                </motion.div>
             )}
 
             {/* Social Links */}
-            <div className="profile-section">
+            <motion.div className="profile-section" variants={itemVariants}>
                 <h2>🔗 Social Links</h2>
                 <div className="social-links-grid">
                     {socialPlatforms.map(platform => {
                         const hasLink = displayData.socialLinks?.[platform.key];
-
                         if (!isEditing && !hasLink) return null;
-
                         return (
                             <div key={platform.key} className="social-link-item">
                                 <span className="social-icon">{platform.icon}</span>
@@ -450,39 +499,10 @@ const Profile = ({ userId }) => {
                         );
                     })}
                 </div>
-                {!isEditing && !socialPlatforms.some(p => displayData.socialLinks?.[p.key]) && (
-                    <p className="section-empty">No social links added yet</p>
-                )}
-            </div>
-
-            {/* Favorite Software */}
-            <div className="profile-section">
-                <h2>🛠️ Favorite Software</h2>
-                <div className="software-grid">
-                    {isEditing ? (
-                        softwareOptions.map(software => (
-                            <button
-                                key={software}
-                                className={`software-tag ${(editData.favoriteSoftware || []).includes(software) ? 'active' : ''}`}
-                                onClick={() => toggleSoftware(software)}
-                            >
-                                {software}
-                            </button>
-                        ))
-                    ) : (displayData.favoriteSoftware || []).length > 0 ? (
-                        (displayData.favoriteSoftware || []).map(software => (
-                            <span key={software} className="software-tag active">
-                                {software}
-                            </span>
-                        ))
-                    ) : (
-                        <p className="section-empty">No software selected yet</p>
-                    )}
-                </div>
-            </div>
+            </motion.div>
 
             {/* Completed Missions */}
-            <div className="profile-section">
+            <motion.div className="profile-section" variants={itemVariants}>
                 <h2>✅ Completed Missions ({completedMissions.length})</h2>
                 {completedMissions.length > 0 ? (
                     <div className="missions-grid">
@@ -491,7 +511,7 @@ const Profile = ({ userId }) => {
                                 <div className="mission-score">{mission.score || 'N/A'}</div>
                                 <div className="mission-details">
                                     <h4>{mission.missionTitle || 'Case Study'}</h4>
-                                    <p>{new Date(mission.createdAt).toLocaleDateString()}</p>
+                                    <p>{new Date(mission.submittedAt || mission.createdAt).toLocaleDateString()}</p>
                                 </div>
                             </div>
                         ))}
@@ -499,29 +519,27 @@ const Profile = ({ userId }) => {
                 ) : (
                     <p className="section-empty">No completed missions yet. Start your first case study!</p>
                 )}
-            </div>
+            </motion.div>
 
-            {/* Feedback & Scores */}
-            <div className="profile-section">
-                <h2>💬 AI Feedback & Scores</h2>
-                {feedbacks.length > 0 ? (
-                    <div className="feedback-list">
-                        {feedbacks.slice(0, 5).map((feedback, index) => (
-                            <div key={index} className="feedback-item">
-                                <div className="feedback-score">
-                                    Score: {feedback.overallScore || 'N/A'}/10
-                                </div>
-                                <div className="feedback-preview">
-                                    {feedback.summary || 'Feedback available'}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                ) : (
-                    <p className="section-empty">No feedback received yet</p>
-                )}
-            </div>
-        </div>
+            {/* Modals */}
+            {showSubmissionForm && currentMissionToSubmit && (
+                <SubmissionForm
+                    mission={currentMissionToSubmit}
+                    userId={userId}
+                    onClose={() => setShowSubmissionForm(false)}
+                    onSubmit={handleSubmission}
+                />
+            )}
+
+            {analysisResult && analyzingSubmission && (
+                <AnalysisResultModal
+                    result={analysisResult}
+                    submission={analyzingSubmission.data}
+                    onClose={() => setAnalysisResult(null)}
+                    onComplete={completeMission}
+                />
+            )}
+        </motion.div>
     );
 };
 

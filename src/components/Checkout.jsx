@@ -1,16 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { dbOperations } from '../database/schema';
+import { PaymentService } from '../services/PaymentService';
 import './Checkout.css';
 
-const Checkout = ({ plan, user, onBack, onComplete }) => {
+const Checkout = ({ plan, user, refreshUser, onBack, onComplete }) => {
     const [step, setStep] = useState(1); // 1: Billing, 2: Payment, 3: Success, 4: Error
     const [loading, setLoading] = useState(false);
+    const [show3DSecure, setShow3DSecure] = useState(false);
 
     // Billing Info
-    const [billingType, setBillingType] = useState('individual'); // individual, corporate
+    const [billingType, setBillingType] = useState('individual');
     const [billingInfo, setBillingInfo] = useState({
-        firstName: '',
-        lastName: '',
+        firstName: user?.firstName || '',
+        lastName: user?.lastName || '',
         address: '',
         city: '',
         country: '',
@@ -20,55 +22,64 @@ const Checkout = ({ plan, user, onBack, onComplete }) => {
     });
 
     // Payment Info
-    const [paymentInfo, setPaymentInfo] = useState({
-        cardName: '',
-        cardNumber: '',
+    const [cardData, setCardData] = useState({
+        number: '',
+        holderName: '',
         expiry: '',
         cvc: ''
     });
+    const [cardType, setCardType] = useState('Unknown');
+    const [isFlipped, setIsFlipped] = useState(false);
 
     // Validation Errors
     const [errors, setErrors] = useState({});
 
-    // Scroll to top on step change
+    // Scroll to top
     useEffect(() => {
         window.scrollTo(0, 0);
     }, [step]);
 
-    // Handle Input Changes
+    // Handle Billing Inputs
     const handleBillingChange = (e) => {
         const { name, value } = e.target;
         setBillingInfo(prev => ({ ...prev, [name]: value }));
-        // Clear error when user types
-        if (errors[name]) {
-            setErrors(prev => ({ ...prev, [name]: null }));
-        }
+        if (errors[name]) setErrors(prev => ({ ...prev, [name]: null }));
     };
 
-    const handlePaymentChange = (e) => {
+    // Handle Card Inputs
+    const handleCardChange = (e) => {
         const { name, value } = e.target;
-        setPaymentInfo(prev => ({ ...prev, [name]: value }));
-        if (errors[name]) {
-            setErrors(prev => ({ ...prev, [name]: null }));
+        let formattedValue = value;
+
+        if (name === 'number') {
+            formattedValue = PaymentService.formatCardNumber(value);
+            setCardType(PaymentService.getCardType(value));
+        } else if (name === 'expiry') {
+            formattedValue = PaymentService.formatExpiry(value);
+        } else if (name === 'cvc') {
+            formattedValue = value.replace(/\D/g, '').slice(0, 4);
+        }
+
+        setCardData(prev => ({ ...prev, [name]: formattedValue }));
+
+        // Validation on change
+        if (name === 'number') {
+            const isValid = PaymentService.isValidLuhn(value);
+            setErrors(prev => ({
+                ...prev,
+                number: isValid || value.length < 14 ? null : 'Invalid Card Number'
+            }));
+        } else {
+            if (errors[name]) setErrors(prev => ({ ...prev, [name]: null }));
         }
     };
 
-    // Format Card Number
-    const handleCardNumberChange = (e) => {
-        let value = e.target.value.replace(/\D/g, '');
-        if (value.length > 16) value = value.slice(0, 16);
-        value = value.replace(/(\d{4})/g, '$1 ').trim();
-        setPaymentInfo(prev => ({ ...prev, cardNumber: value }));
-        if (errors.cardNumber) setErrors(prev => ({ ...prev, cardNumber: null }));
-    };
-
-    // Format Expiry
-    const handleExpiryChange = (e) => {
-        let value = e.target.value.replace(/\D/g, '');
-        if (value.length > 4) value = value.slice(0, 4);
-        if (value.length > 2) value = value.slice(0, 2) + '/' + value.slice(2);
-        setPaymentInfo(prev => ({ ...prev, expiry: value }));
-        if (errors.expiry) setErrors(prev => ({ ...prev, expiry: null }));
+    const handleFocus = (e) => {
+        if (e.target.name === 'cvc') {
+            setIsFlipped(true);
+        } else {
+            setIsFlipped(false);
+        }
     };
 
     // Validation
@@ -78,83 +89,88 @@ const Checkout = ({ plan, user, onBack, onComplete }) => {
         if (!billingInfo.lastName) newErrors.lastName = 'Last Name is required';
         if (!billingInfo.address) newErrors.address = 'Address is required';
         if (!billingInfo.city) newErrors.city = 'City is required';
-        if (!billingInfo.country) newErrors.country = 'Country is required';
-
         if (billingType === 'corporate') {
             if (!billingInfo.companyName) newErrors.companyName = 'Company Name is required';
-            if (!billingInfo.taxId) newErrors.taxId = 'Tax ID is required';
         }
-
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
 
     const validatePayment = () => {
         const newErrors = {};
-        if (!paymentInfo.cardName) newErrors.cardName = 'Cardholder Name is required';
-        if (!paymentInfo.cardNumber || paymentInfo.cardNumber.length < 19) newErrors.cardNumber = 'Valid Card Number is required';
-        if (!paymentInfo.expiry || paymentInfo.expiry.length < 5) newErrors.expiry = 'Valid Expiry Date required';
-        if (!paymentInfo.cvc || paymentInfo.cvc.length < 3) newErrors.cvc = 'CVC is required';
+        if (!cardData.holderName) newErrors.holderName = 'Card Holder Name is required';
+        if (cardData.number.length < 15 || !PaymentService.isValidLuhn(cardData.number)) {
+            newErrors.number = 'Invalid Card Number';
+        }
+        if (cardData.expiry.length !== 5) newErrors.expiry = 'Invalid Date (MM/YY)';
+        if (cardData.cvc.length < 3) newErrors.cvc = 'Invalid CVC';
 
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
 
-    // Navigation Steps
     const goToPayment = () => {
-        if (validateBilling()) {
-            setStep(2);
-        }
+        if (validateBilling()) setStep(2);
     };
 
-    const processPayment = async () => {
+    const handlePaymentSubmit = async () => {
         if (!validatePayment()) return;
 
         setLoading(true);
 
-        // Simulate API call
-        setTimeout(async () => {
-            setLoading(false);
+        // Simulate 3D Secure
+        setTimeout(() => {
+            setShow3DSecure(true);
 
-            // Randomly succeed or fail (but for demo we mostly succeed unless hardcoded)
-            // Just satisfy the user request: "if info missing -> fail" (already handled by validation)
-            // If validation passed, let's succeed.
+            // Auto finish 3D Secure after 3s
+            setTimeout(async () => {
+                setShow3DSecure(false);
 
-            try {
-                // Update User
-                if (user) {
-                    await dbOperations.update('users', user.id, {
-                        ...user,
-                        subscriptionTier: plan.name // Starter, Pro, Elite
+                try {
+                    // Call Fake Payment Service
+                    await PaymentService.processPayment({
+                        ...cardData,
+                        amount: plan.price
                     });
+
+                    // Success
+                    if (user) {
+                        await dbOperations.update('users', user.id, {
+                            ...user,
+                            subscriptionTier: plan.name
+                        });
+                        if (refreshUser) await refreshUser();
+                    }
+
+                    setStep(3); // Success Screen
+                    setTimeout(() => onComplete(), 4000);
+
+                } catch (error) {
+                    console.error('Payment Error', error);
+                    setStep(4); // Error Screen
+                } finally {
+                    setLoading(false);
                 }
-                setStep(3); // Success
-
-                // Redirect after 3 seconds
-                setTimeout(() => {
-                    onComplete();
-                }, 3000);
-            } catch (error) {
-                console.error("Payment error", error);
-                setStep(4); // Error (though unlikely with mock)
-            }
-
-        }, 2000);
+            }, 3000);
+        }, 1500);
     };
 
     if (!plan) return <div>No plan selected. <button onClick={onBack}>Go Back</button></div>;
 
+    const taxAmount = (parseFloat(plan.price.replace('$', '')) * 0.18).toFixed(2);
+    const totalAmount = plan.price;
+
     return (
         <div className="checkout-container">
-            {/* Steps Indicator */}
+            {/* Steps */}
             <div className="checkout-steps">
                 <div className={`step-item ${step >= 1 ? 'active' : ''} ${step > 1 ? 'completed' : ''}`}>
-                    <div className="step-circle">1</div>
+                    <div className="step-circle">{step > 1 ? '✓' : '1'}</div>
                     <span>Billing</span>
                 </div>
                 <div className="step-line"></div>
                 <div className={`step-item ${step >= 2 ? 'active' : ''} ${step > 2 ? 'completed' : ''}`}>
-                    <div className="step-circle">2</div>
+                    <div className="step-circle">{step > 2 ? '✓' : '2'}</div>
                     <span>Payment</span>
                 </div>
                 <div className="step-line"></div>
@@ -165,47 +181,37 @@ const Checkout = ({ plan, user, onBack, onComplete }) => {
             </div>
 
             <div className="checkout-content">
-                {/* Step 1: Billing Info */}
+                {/* 3D Secure Modal */}
+                {show3DSecure && (
+                    <div className="secure-modal-overlay">
+                        <div className="secure-modal">
+                            <h3>3D Secure Verification</h3>
+                            <p>Connecting to your bank...</p>
+                            <div className="secure-loader"></div>
+                            <p className="subtitle" style={{ marginTop: '10px', fontSize: '0.9rem' }}>Please do not close this window.</p>
+                        </div>
+                    </div>
+                )}
+
+                {/* Step 1: Billing */}
                 {step === 1 && (
                     <div className="checkout-form-section">
                         <h2>Billing Information</h2>
 
                         <div className="billing-type-selector">
-                            <button
-                                className={`type-btn ${billingType === 'individual' ? 'active' : ''}`}
-                                onClick={() => setBillingType('individual')}
-                            >
-                                Individual
-                            </button>
-                            <button
-                                className={`type-btn ${billingType === 'corporate' ? 'active' : ''}`}
-                                onClick={() => setBillingType('corporate')}
-                            >
-                                Corporate
-                            </button>
+                            <button className={`type-btn ${billingType === 'individual' ? 'active' : ''}`} onClick={() => setBillingType('individual')}>Individual</button>
+                            <button className={`type-btn ${billingType === 'corporate' ? 'active' : ''}`} onClick={() => setBillingType('corporate')}>Corporate</button>
                         </div>
 
                         <div className="form-grid">
                             <div className="form-group">
                                 <label>First Name</label>
-                                <input
-                                    type="text"
-                                    name="firstName"
-                                    value={billingInfo.firstName}
-                                    onChange={handleBillingChange}
-                                    className={errors.firstName ? 'error' : ''}
-                                />
+                                <input name="firstName" value={billingInfo.firstName} onChange={handleBillingChange} />
                                 {errors.firstName && <span className="error-msg">{errors.firstName}</span>}
                             </div>
                             <div className="form-group">
                                 <label>Last Name</label>
-                                <input
-                                    type="text"
-                                    name="lastName"
-                                    value={billingInfo.lastName}
-                                    onChange={handleBillingChange}
-                                    className={errors.lastName ? 'error' : ''}
-                                />
+                                <input name="lastName" value={billingInfo.lastName} onChange={handleBillingChange} />
                                 {errors.lastName && <span className="error-msg">{errors.lastName}</span>}
                             </div>
 
@@ -213,200 +219,187 @@ const Checkout = ({ plan, user, onBack, onComplete }) => {
                                 <>
                                     <div className="form-group full-width">
                                         <label>Company Name</label>
-                                        <input
-                                            type="text"
-                                            name="companyName"
-                                            value={billingInfo.companyName}
-                                            onChange={handleBillingChange}
-                                            className={errors.companyName ? 'error' : ''}
-                                        />
+                                        <input name="companyName" value={billingInfo.companyName} onChange={handleBillingChange} />
                                         {errors.companyName && <span className="error-msg">{errors.companyName}</span>}
                                     </div>
                                     <div className="form-group full-width">
-                                        <label>Tax ID / VKN</label>
-                                        <input
-                                            type="text"
-                                            name="taxId"
-                                            value={billingInfo.taxId}
-                                            onChange={handleBillingChange}
-                                            className={errors.taxId ? 'error' : ''}
-                                        />
-                                        {errors.taxId && <span className="error-msg">{errors.taxId}</span>}
+                                        <label>Tax ID</label>
+                                        <input name="taxId" value={billingInfo.taxId} onChange={handleBillingChange} />
                                     </div>
                                 </>
                             )}
 
                             <div className="form-group full-width">
                                 <label>Address</label>
-                                <input
-                                    type="text"
-                                    name="address"
-                                    value={billingInfo.address}
-                                    onChange={handleBillingChange}
-                                    className={errors.address ? 'error' : ''}
-                                />
+                                <input name="address" value={billingInfo.address} onChange={handleBillingChange} />
                                 {errors.address && <span className="error-msg">{errors.address}</span>}
                             </div>
                             <div className="form-group">
                                 <label>City</label>
-                                <input
-                                    type="text"
-                                    name="city"
-                                    value={billingInfo.city}
-                                    onChange={handleBillingChange}
-                                    className={errors.city ? 'error' : ''}
-                                />
+                                <input name="city" value={billingInfo.city} onChange={handleBillingChange} />
                                 {errors.city && <span className="error-msg">{errors.city}</span>}
                             </div>
                             <div className="form-group">
                                 <label>Zip Code</label>
-                                <input
-                                    type="text"
-                                    name="zip"
-                                    value={billingInfo.zip}
-                                    onChange={handleBillingChange}
-                                />
-                            </div>
-                            <div className="form-group full-width">
-                                <label>Country</label>
-                                <select
-                                    name="country"
-                                    value={billingInfo.country}
-                                    onChange={handleBillingChange}
-                                    className={errors.country ? 'error' : ''}
-                                >
-                                    <option value="">Select Country</option>
-                                    <option value="Turkey">Turkey</option>
-                                    <option value="USA">USA</option>
-                                    <option value="UK">UK</option>
-                                    <option value="Germany">Germany</option>
-                                </select>
-                                {errors.country && <span className="error-msg">{errors.country}</span>}
+                                <input name="zip" value={billingInfo.zip} onChange={handleBillingChange} />
                             </div>
                         </div>
 
                         <div className="form-actions">
                             <button className="btn-secondary" onClick={onBack}>Back</button>
-                            <button className="btn-primary" onClick={goToPayment}>Next To Payment</button>
+                            <button className="btn-primary" onClick={goToPayment}>Continue to Payment</button>
                         </div>
                     </div>
                 )}
 
-                {/* Step 2: Payment Info */}
+                {/* Step 2: Payment (New Credit Card Form) */}
                 {step === 2 && (
                     <div className="checkout-form-section">
-                        <h2>Payment Details</h2>
-                        <div className="credit-card-preview">
-                            <div className="cc-chip"></div>
-                            <div className="cc-number">{paymentInfo.cardNumber || '**** **** **** ****'}</div>
-                            <div className="cc-holder">
-                                <span>{paymentInfo.cardName || 'CARD HOLDER'}</span>
-                                <span>{paymentInfo.expiry || 'MM/YY'}</span>
+                        <h2>Secure Payment</h2>
+
+                        {/* 3D Card Visual */}
+                        <div className="credit-card-visual-wrapper">
+                            <div className={`credit-card-visual ${isFlipped ? 'flipped' : ''}`}>
+                                <div className="card-inner">
+                                    <div className="card-front">
+                                        <div className="card-chip"></div>
+                                        <div className="card-logo">{cardType !== 'Unknown' ? cardType : 'GDA Bank'}</div>
+                                        <div className="card-number-display">{cardData.number || '•••• •••• •••• ••••'}</div>
+                                        <div className="card-details-row">
+                                            <div>
+                                                <div className="card-label">Card Holder</div>
+                                                <div>{cardData.holderName || 'FULL NAME'}</div>
+                                            </div>
+                                            <div>
+                                                <div className="card-label">Expires</div>
+                                                <div>{cardData.expiry || 'MM/YY'}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="card-back">
+                                        <div className="magnetic-strip"></div>
+                                        <div className="cvc-display">{cardData.cvc || 'CVC'}</div>
+                                        <div className="card-logo" style={{ textAlign: 'right', marginTop: 'auto' }}>GDA Bank</div>
+                                    </div>
+                                </div>
                             </div>
-                            <div className="cc-logo">VISA</div>
                         </div>
 
                         <div className="form-grid">
                             <div className="form-group full-width">
-                                <label>Cardholder Name</label>
-                                <input
-                                    type="text"
-                                    name="cardName"
-                                    value={paymentInfo.cardName}
-                                    onChange={handlePaymentChange}
-                                    className={errors.cardName ? 'error' : ''}
-                                    placeholder="JOHN DOE"
-                                />
-                                {errors.cardName && <span className="error-msg">{errors.cardName}</span>}
-                            </div>
-                            <div className="form-group full-width">
                                 <label>Card Number</label>
                                 <input
-                                    type="text"
-                                    name="cardNumber"
-                                    value={paymentInfo.cardNumber}
-                                    onChange={handleCardNumberChange}
-                                    className={errors.cardNumber ? 'error' : ''}
+                                    name="number"
+                                    value={cardData.number}
+                                    onChange={handleCardChange}
+                                    onFocus={handleFocus}
                                     placeholder="0000 0000 0000 0000"
                                     maxLength="19"
+                                    className={errors.number ? 'error' : ''}
                                 />
-                                {errors.cardNumber && <span className="error-msg">{errors.cardNumber}</span>}
+                                {errors.number && <span className="error-msg">{errors.number}</span>}
                             </div>
-                            <div className="form-group">
-                                <label>Expiration Date</label>
+
+                            <div className="form-group full-width">
+                                <label>Card Holder Name</label>
                                 <input
-                                    type="text"
+                                    name="holderName"
+                                    value={cardData.holderName}
+                                    onChange={handleCardChange}
+                                    onFocus={handleFocus}
+                                    placeholder="MERT DEMIR"
+                                    className={errors.holderName ? 'error' : ''}
+                                />
+                                {errors.holderName && <span className="error-msg">{errors.holderName}</span>}
+                            </div>
+
+                            <div className="form-group">
+                                <label>Expiry Date</label>
+                                <input
                                     name="expiry"
-                                    value={paymentInfo.expiry}
-                                    onChange={handleExpiryChange}
-                                    className={errors.expiry ? 'error' : ''}
+                                    value={cardData.expiry}
+                                    onChange={handleCardChange}
+                                    onFocus={handleFocus}
                                     placeholder="MM/YY"
                                     maxLength="5"
+                                    className={errors.expiry ? 'error' : ''}
                                 />
                                 {errors.expiry && <span className="error-msg">{errors.expiry}</span>}
                             </div>
+
                             <div className="form-group">
-                                <label>CVC</label>
+                                <label>CVC / CVV</label>
                                 <input
-                                    type="text"
                                     name="cvc"
-                                    value={paymentInfo.cvc}
-                                    onChange={handlePaymentChange}
-                                    className={errors.cvc ? 'error' : ''}
+                                    value={cardData.cvc}
+                                    onChange={handleCardChange}
+                                    onFocus={handleFocus}
                                     placeholder="123"
                                     maxLength="4"
+                                    className={errors.cvc ? 'error' : ''}
                                 />
                                 {errors.cvc && <span className="error-msg">{errors.cvc}</span>}
                             </div>
                         </div>
 
+                        <div className="secure-badge" style={{ marginTop: '20px', textAlign: 'center', fontSize: '0.8rem', color: '#aaa' }}>
+                            🔒 256-bit SSL Encrypted • {cardType} Secure Payment
+                        </div>
+
                         <div className="form-actions">
                             <button className="btn-secondary" onClick={() => setStep(1)} disabled={loading}>Back</button>
-                            <button className="btn-primary btn-success" onClick={processPayment} disabled={loading}>
+                            <button className="btn-primary" onClick={handlePaymentSubmit} disabled={loading}>
                                 {loading ? 'Processing...' : `Pay ${plan.price}`}
                             </button>
                         </div>
                     </div>
                 )}
 
-                {/* Order Summary - Always Visible on specific steps */}
+                {/* Summary Panel */}
                 {(step === 1 || step === 2) && (
                     <div className="order-summary">
                         <h3>Order Summary</h3>
-                        <div className="summary-card">
-                            <div className="summary-row">
-                                <span className="summary-label">Plan</span>
-                                <span className="summary-value highlight">{plan.name}</span>
-                            </div>
-                            <div className="summary-row">
-                                <span className="summary-label">Billing Cycle</span>
-                                <span className="summary-value">Monthly</span>
-                            </div>
-                            <div className="summary-divider"></div>
-                            <div className="summary-row total">
-                                <span>Total</span>
-                                <span>{plan.price}</span>
-                            </div>
+                        <div className="summary-row">
+                            <span className="summary-label">Plan</span>
+                            <span className="summary-value highlight">{plan.name} Package</span>
+                        </div>
+                        <div className="summary-row">
+                            <span className="summary-label">Billing Cycle</span>
+                            <span className="summary-value">Monthly</span>
+                        </div>
+                        <div className="summary-row">
+                            <span className="summary-label">Price</span>
+                            <span className="summary-value">{totalAmount}</span>
+                        </div>
+                        <div className="summary-row">
+                            <span className="summary-label">Tax (18%)</span>
+                            <span className="summary-value">${taxAmount}</span>
+                        </div>
+                        <div className="summary-divider"></div>
+                        <div className="summary-row total">
+                            <span>Total</span>
+                            <span>{totalAmount}</span>
                         </div>
                     </div>
                 )}
 
-                {/* Step 3: Success */}
+                {/* Success Screen */}
                 {step === 3 && (
-                    <div className="success-screen">
-                        <div className="success-icon">🎉</div>
-                        <h2>Payment Successful!</h2>
-                        <p>Thank you for subscribing to the <strong>{plan.name}</strong> plan.</p>
-                        <p className="redirect-msg">You are being redirected to your dashboard...</p>
+                    <div className="success-screen" style={{ gridColumn: 'span 2', textAlign: 'center', padding: '50px' }}>
+                        {/* Emoji inside div for React compatibility */}
+                        <div style={{ fontSize: '4rem', marginBottom: '20px' }}>🎉</div>
+                        <h2 style={{ color: '#fff', fontSize: '2rem' }}>Subscription Activated!</h2>
+                        <p style={{ color: '#ccc', margin: '15px 0' }}>Welcome to the <strong>{plan.name}</strong> plan.</p>
+                        <p style={{ color: 'var(--gda-accent-primary)' }}>Redirecting to dashboard...</p>
                     </div>
                 )}
 
-                {/* Step 4: Generic Error (Fallback) */}
+                {/* Error Screen */}
                 {step === 4 && (
-                    <div className="error-screen">
-                        <div className="error-icon">❌</div>
-                        <h2>Payment Failed</h2>
-                        <p>Something went wrong with the transaction.</p>
+                    <div className="error-screen" style={{ gridColumn: 'span 2', textAlign: 'center', padding: '50px' }}>
+                        <div style={{ fontSize: '4rem', marginBottom: '20px' }}>❌</div>
+                        <h2 style={{ color: '#ff4757', fontSize: '2rem' }}>Transaction Failed</h2>
+                        <p style={{ color: '#ccc', margin: '15px 0' }}>Your bank declined the transaction. Please check your card balance.</p>
                         <button className="btn-primary" onClick={() => setStep(2)}>Try Again</button>
                     </div>
                 )}
