@@ -15,19 +15,13 @@ export const AuthProvider = ({ children }) => {
         // Firebase listener
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
             if (user) {
-                // User signed in
-                setCurrentUser(user);
-
                 // Sync with IndexedDB
                 try {
-                    const existingUser = await dbOperations.get('users', user.uid); // Using UID as key if possible, or query by email
-                    // Our schema uses auto-increment ID for users. We should index by email.
-                    // Let's query by email.
-                    const userByEmail = await dbOperations.queryUsersByEmail(user.email); // Need to implement this specific query helper or generic one
+                    let userByEmail = await dbOperations.queryUsersByEmail(user.email);
 
                     if (!userByEmail) {
                         // Create new user in IDB
-                        await dbOperations.add('users', {
+                        const newUserId = await dbOperations.add('users', {
                             email: user.email,
                             username: user.displayName || 'New User',
                             photoURL: user.photoURL,
@@ -36,19 +30,27 @@ export const AuthProvider = ({ children }) => {
                             createdAt: new Date().toISOString(),
                             lastLogin: new Date().toISOString(),
                             xp: 0,
-                            level: 1
+                            level: 1,
+                            hasCompletedOnboarding: false
                         });
+                        userByEmail = await dbOperations.get('users', newUserId);
                     } else {
                         // Update last login
-                        await dbOperations.update('users', userByEmail.id, {
+                        const updatedUser = {
                             ...userByEmail,
                             lastLogin: new Date().toISOString()
-                        });
+                        };
+                        await dbOperations.update('users', userByEmail.id, updatedUser);
+                        userByEmail = updatedUser;
                     }
+
+                    // Set the DATABASE user object as current user (includes .id)
+                    setCurrentUser(userByEmail);
                 } catch (err) {
                     console.error("Error syncing user to IDB:", err);
+                    // Fallback to firebase user if DB fails, but warning
+                    setCurrentUser(user);
                 }
-
             } else {
                 setCurrentUser(null);
             }

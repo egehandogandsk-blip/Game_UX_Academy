@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Routes, Route, Navigate, useNavigate, useParams, useLocation } from 'react-router-dom';
-import { AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { initDatabase, dbOperations } from './database/schema.js';
 import { seedDatabase } from './database/seed.js';
 import { seedMissions, fillMissingMissions, syncMissionDescriptions } from './database/missions.js';
