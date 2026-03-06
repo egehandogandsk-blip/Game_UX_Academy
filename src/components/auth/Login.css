@@ -145,6 +145,13 @@
     box-shadow: 0 0 20px rgba(246, 204, 50, 0.2);
 }
 
+.logo-badge-img {
+    width: 80px;
+    height: auto;
+    object-fit: contain;
+    margin-bottom: var(--spacing-lg);
+}
+
 .login-header h1 {
     font-size: 2rem;
     font-weight: 700;

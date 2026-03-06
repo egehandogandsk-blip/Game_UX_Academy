@@ -80,7 +80,7 @@ const Login = () => {
 
                 <div className="login-card">
                     <div className="login-header">
-                        <div className="logo-badge">GDA</div>
+                        <img src="/gda-logo.png" alt="GDA" className="logo-badge-img" />
                         <h1>Welcome Back</h1>
                         <p className="subtitle">Game UX Analysis & Certification Hub</p>
                     </div>
