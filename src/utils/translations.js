@@ -282,6 +282,10 @@ export const translations = {
         orderSummary: 'Sipariş Özeti',
         plan: 'Plan',
         monthly_package: '{name} Paketi',
+        linkPaymentSuccess: 'Formu doldurduğunuz için teşekkürler! Satış temsilcilerimiz ödeme ile ilgili size e-posta gönderecektir. Ödeme işlemini tamamladıktan sonra üyeliğiniz aktif olacaktır.',
+        returnToHome: 'Ana Sayfaya Dön',
+        approveSubscription: 'Üyeliği Onayla',
+        pending_approval: 'Onay Bekliyor',
     },
 
     en: {
@@ -570,6 +574,10 @@ export const translations = {
         orderSummary: 'Order Summary',
         plan: 'Plan',
         monthly_package: '{name} Package',
+        linkPaymentSuccess: 'Thank you for filling out the form! Our sales representatives will send you an email regarding payment. Your membership will be activated after completing the payment process.',
+        returnToHome: 'Return to Home',
+        approveSubscription: 'Approve Membership',
+        pending_approval: 'Pending Approval',
     },
 
     fr: {

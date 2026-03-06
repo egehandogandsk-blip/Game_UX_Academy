@@ -57,11 +57,14 @@ const Checkout = ({ plan, user, refreshUser, onBack, onComplete }) => {
 
     const handleSuccess = useCallback(async (trxId = 'TEST_TRX') => {
         if (user) {
+            const isLinkPayment = paymentMethod === 'link';
+
             await dbOperations.update('users', user.id, {
                 ...user,
-                subscriptionTier: plan.name,
-                planId: plan.id,
-                subscriptionStatus: 'active'
+                subscriptionTier: isLinkPayment ? (user.subscriptionTier || 'Free') : plan.name,
+                pendingTier: isLinkPayment ? plan.name : null,
+                planId: isLinkPayment ? (user.planId || null) : plan.id,
+                subscriptionStatus: isLinkPayment ? 'pending_approval' : 'active'
             });
 
             await dbOperations.add('subscriptions', {
@@ -69,15 +72,19 @@ const Checkout = ({ plan, user, refreshUser, onBack, onComplete }) => {
                 plan: plan.name,
                 date: new Date().toISOString(),
                 amount: plan.price,
-                transactionId: trxId
+                transactionId: trxId,
+                status: isLinkPayment ? 'pending' : 'completed',
+                paymentMethod: paymentMethod
             });
 
             if (refreshUser) await refreshUser();
         }
 
         setStep(3); // Success Screen
-        setTimeout(() => onComplete(), 5000);
-    }, [user, plan, refreshUser, onComplete]);
+        if (paymentMethod !== 'link') {
+            setTimeout(() => onComplete(), 5000);
+        }
+    }, [user, plan, refreshUser, onComplete, paymentMethod]);
 
     // Stripe Payment Request Effect
     useEffect(() => {
@@ -523,10 +530,26 @@ const Checkout = ({ plan, user, refreshUser, onBack, onComplete }) => {
                 {/* Success Screen */}
                 {step === 3 && (
                     <div className="success-screen" style={{ gridColumn: 'span 2', textAlign: 'center', padding: '50px' }}>
-                        <div style={{ fontSize: '4rem', marginBottom: '20px' }}>🎉</div>
-                        <h2 style={{ color: '#fff', fontSize: '2rem' }}>{t('subscriptionActivated')}</h2>
-                        <p style={{ color: '#ccc', margin: '15px 0' }}>Welcome to the <strong>{plan.name}</strong> plan.</p>
-                        <p style={{ color: 'var(--gda-accent-primary)' }}>{t('redirectingToDashboard')}</p>
+                        <div style={{ fontSize: '4rem', marginBottom: '20px' }}>{paymentMethod === 'link' ? '📨' : '🎉'}</div>
+                        <h2 style={{ color: '#fff', fontSize: '2rem' }}>
+                            {paymentMethod === 'link' ? t('success') : t('subscriptionActivated')}
+                        </h2>
+
+                        {paymentMethod === 'link' ? (
+                            <>
+                                <p style={{ color: '#ccc', margin: '20px auto', maxWidth: '500px', lineHeight: '1.6' }}>
+                                    {t('linkPaymentSuccess')}
+                                </p>
+                                <button className="btn-primary" onClick={() => onComplete()} style={{ marginTop: '20px' }}>
+                                    {t('returnToHome')}
+                                </button>
+                            </>
+                        ) : (
+                            <>
+                                <p style={{ color: '#ccc', margin: '15px 0' }}>Welcome to the <strong>{plan.name}</strong> plan.</p>
+                                <p style={{ color: 'var(--gda-accent-primary)' }}>{t('redirectingToDashboard')}</p>
+                            </>
+                        )}
                     </div>
                 )}
 

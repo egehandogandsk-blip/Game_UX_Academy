@@ -299,7 +299,12 @@ const Profile = ({ userId }) => {
                                 </label>
                             )}
                         </div>
-                        {user?.subscriptionTier && user.subscriptionTier !== 'Free' && (
+                        {user?.subscriptionStatus === 'pending_approval' && (
+                            <div className="tier-badge-floating pending" title={t('pending_approval')} style={{ background: '#f6cc32', color: '#000' }}>
+                                ⏳
+                            </div>
+                        )}
+                        {user?.subscriptionTier && user.subscriptionTier !== 'Free' && user.subscriptionStatus !== 'pending_approval' && (
                             <div className="tier-badge-floating" title={user.subscriptionTier}>
                                 ★
                             </div>

@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { dbOperations } from '../../../database/schema';
+import { useT } from '../../../contexts/LanguageContext';
 import './AdminModules.css';
 
 const UserManager = () => {
+    const t = useT();
     const [users, setUsers] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [editingUser, setEditingUser] = useState(null);
@@ -29,17 +31,33 @@ const UserManager = () => {
 
     const handleBan = async (user) => {
         if (confirm(`Are you sure you want to ban ${user.username}?`)) {
-            // In a real app we might have a 'status' field. 
-            // Here we'll just add a '[BANNED]' prefix to name or delete?
-            // User requested "Admin ekle, çıkar ve düzenleme yetkileri".
-            // Let's assume we update a status field if we had one, or simply delete.
-            // Let's just update the name for now as a soft ban or delete.
-            // For safety, let's just Log it.
-            // Better: Update user to have 'isBanned: true' (schema is flexible)
             const bannedUser = { ...user, isBanned: !user.isBanned };
             await dbOperations.update('users', user.id, bannedUser);
             loadUsers();
         }
+    };
+
+    const handleApproveSubscription = async (user) => {
+        if (!user.pendingTier) return;
+
+        await dbOperations.update('users', user.id, {
+            ...user,
+            subscriptionTier: user.pendingTier,
+            subscriptionStatus: 'active',
+            pendingTier: null
+        });
+
+        loadUsers();
+    };
+
+    const handleCancelSubscription = async (user) => {
+        await dbOperations.update('users', user.id, {
+            ...user,
+            subscriptionStatus: 'active', // Reset to active (but with current/free tier)
+            pendingTier: null
+        });
+
+        loadUsers();
     };
 
     const filteredUsers = users.filter(u =>
@@ -94,12 +112,36 @@ const UserManager = () => {
                             <div className="user-status-cell">
                                 {user.isBanned ? (
                                     <span className="status-badge banned">Banned</span>
+                                ) : user.subscriptionStatus === 'pending_approval' ? (
+                                    <span className="status-badge pending" style={{ background: '#f6cc32', color: '#000' }}>
+                                        {t('pending_approval')} ({user.pendingTier})
+                                    </span>
                                 ) : (
                                     <span className="status-badge active">Active</span>
                                 )}
                             </div>
 
-                            <div className="user-actions-cell">
+                            <div className="user-actions-cell" style={{ display: 'flex', gap: '8px' }}>
+                                {user.subscriptionStatus === 'pending_approval' && (
+                                    <>
+                                        <button
+                                            onClick={() => handleApproveSubscription(user)}
+                                            className="action-btn approve"
+                                            title={t('approveSubscription')}
+                                            style={{ background: 'var(--gda-success)', fontSize: '12px', padding: '4px 8px', borderRadius: '4px', color: '#000', border: 'none', cursor: 'pointer' }}
+                                        >
+                                            {t('approveSubscription')}
+                                        </button>
+                                        <button
+                                            onClick={() => handleCancelSubscription(user)}
+                                            className="action-btn cancel"
+                                            title={t('cancel')}
+                                            style={{ background: 'var(--gda-error)', fontSize: '12px', padding: '4px 8px', borderRadius: '4px', color: '#fff', border: 'none', cursor: 'pointer' }}
+                                        >
+                                            {t('cancel')}
+                                        </button>
+                                    </>
+                                )}
                                 <button onClick={() => handleEdit(user)} className="action-btn edit" title="Edit">
                                     ✏️
                                 </button>

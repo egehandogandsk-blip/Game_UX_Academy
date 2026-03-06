@@ -130,7 +130,12 @@ const Sidebar = ({ user, onLogout }) => {
                         <div className="user-name-compact">{user?.username || 'GDA User'}</div>
                         <div className="user-badges-row">
                             <span className="level-badge">Lvl {user?.level || 1}</span>
-                            {user?.subscriptionTier && user.subscriptionTier !== 'Free' && (
+                            {user?.subscriptionStatus === 'pending_approval' && (
+                                <span className="tier-badge-sidebar pending" style={{ background: '#f6cc32', color: '#000', fontSize: '10px' }}>
+                                    {t(language, 'pending_approval')}
+                                </span>
+                            )}
+                            {user?.subscriptionTier && user.subscriptionTier !== 'Free' && user.subscriptionStatus !== 'pending_approval' && (
                                 <span className="tier-badge-sidebar">{user.subscriptionTier}</span>
                             )}
                         </div>
