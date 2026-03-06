@@ -1,10 +1,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useStripe, useElements, CardNumberElement, CardExpiryElement, CardCvcElement, PaymentRequestButtonElement } from '@stripe/react-stripe-js';
+import { useStripe, useElements, CardNumberElement, CardExpiryElement, CardCvcElement } from '@stripe/react-stripe-js';
+import { useT } from '../contexts/LanguageContext';
 import { dbOperations } from '../database/schema';
 import { StripeService } from '../services/StripeService';
 import './Checkout.css';
 
+import akbankLogo from '../assets/payment/akbank.png';
+import toslaLogo from '../assets/payment/tosla.png';
+
 const Checkout = ({ plan, user, refreshUser, onBack, onComplete }) => {
+    const t = useT();
     const stripe = useStripe();
     const elements = useElements();
 
@@ -189,17 +194,27 @@ const Checkout = ({ plan, user, refreshUser, onBack, onComplete }) => {
     const handleLinkSubmit = async () => {
         if (!validateLinkInfo()) return;
         setLoading(true);
+
+        // Format data for Google Sheet columns: İsim, Soyisim, E-posta, Telefon, Adres
+        const submissionData = {
+            'İsim': linkInfo.firstName,
+            'Soyisim': linkInfo.lastName,
+            'E-posta': linkInfo.email,
+            'Telefon': linkInfo.phone,
+            'Adres': linkInfo.address
+        };
+
         // Simulate demo "Send" action
         setTimeout(() => {
-            console.log('Link Payment Info Submitted (Demo):', linkInfo);
+            console.log('Link Payment Data (Excel Ready):', submissionData);
             handleSuccess('LINK_DEMO_TRX');
         }, 2000);
     };
 
-    if (!plan) return <div className="p-8">No plan selected. <button className="btn-primary" onClick={onBack}>Go Back</button></div>;
-
-    const taxAmount = (parseFloat(plan.price.replace('$', '')) * 0.18).toFixed(2);
-    const totalAmount = plan.price;
+    const taxRate = 0.20;
+    const basePrice = parseFloat(plan.price.replace('$', ''));
+    const taxAmount = (basePrice * taxRate).toFixed(2);
+    const totalAmount = (basePrice + parseFloat(taxAmount)).toFixed(2);
 
     const stripeElementOptions = {
         style: {
@@ -243,21 +258,21 @@ const Checkout = ({ plan, user, refreshUser, onBack, onComplete }) => {
                 {/* Step 1: Billing */}
                 {step === 1 && (
                     <div className="checkout-form-section">
-                        <h2>Billing Information</h2>
+                        <h2>{t('billingInformation')}</h2>
 
                         <div className="billing-type-selector">
-                            <button className={`type-btn ${billingType === 'individual' ? 'active' : ''}`} onClick={() => setBillingType('individual')}>Individual</button>
-                            <button className={`type-btn ${billingType === 'corporate' ? 'active' : ''}`} onClick={() => setBillingType('corporate')}>Corporate</button>
+                            <button className={`type-btn ${billingType === 'individual' ? 'active' : ''}`} onClick={() => setBillingType('individual')}>{t('individual')}</button>
+                            <button className={`type-btn ${billingType === 'corporate' ? 'active' : ''}`} onClick={() => setBillingType('corporate')}>{t('corporate')}</button>
                         </div>
 
                         <div className="form-grid">
                             <div className="form-group">
-                                <label>First Name</label>
+                                <label>{t('firstName')}</label>
                                 <input name="firstName" value={billingInfo.firstName} onChange={handleBillingChange} placeholder="John" />
                                 {errors.firstName && <span className="error-msg">{errors.firstName}</span>}
                             </div>
                             <div className="form-group">
-                                <label>Last Name</label>
+                                <label>{t('lastName')}</label>
                                 <input name="lastName" value={billingInfo.lastName} onChange={handleBillingChange} placeholder="Doe" />
                                 {errors.lastName && <span className="error-msg">{errors.lastName}</span>}
                             </div>
@@ -265,36 +280,36 @@ const Checkout = ({ plan, user, refreshUser, onBack, onComplete }) => {
                             {billingType === 'corporate' && (
                                 <>
                                     <div className="form-group full-width">
-                                        <label>Company Name</label>
+                                        <label>{t('companyName')}</label>
                                         <input name="companyName" value={billingInfo.companyName} onChange={handleBillingChange} />
                                         {errors.companyName && <span className="error-msg">{errors.companyName}</span>}
                                     </div>
                                     <div className="form-group full-width">
-                                        <label>Tax ID</label>
+                                        <label>{t('taxId')}</label>
                                         <input name="taxId" value={billingInfo.taxId} onChange={handleBillingChange} />
                                     </div>
                                 </>
                             )}
 
                             <div className="form-group full-width">
-                                <label>Address</label>
+                                <label>{t('address_label')}</label>
                                 <input name="address" value={billingInfo.address} onChange={handleBillingChange} placeholder="Main St 123" />
                                 {errors.address && <span className="error-msg">{errors.address}</span>}
                             </div>
                             <div className="form-group">
-                                <label>City</label>
+                                <label>{t('city')}</label>
                                 <input name="city" value={billingInfo.city} onChange={handleBillingChange} placeholder="New York" />
                                 {errors.city && <span className="error-msg">{errors.city}</span>}
                             </div>
                             <div className="form-group">
-                                <label>Zip Code</label>
+                                <label>{t('zipCode')}</label>
                                 <input name="zip" value={billingInfo.zip} onChange={handleBillingChange} placeholder="10001" />
                             </div>
                         </div>
 
                         <div className="form-actions">
-                            <button className="btn-secondary" onClick={onBack}>Back</button>
-                            <button className="btn-primary" onClick={goToPayment}>Continue to Payment</button>
+                            <button className="btn-secondary" onClick={onBack}>{t('back')}</button>
+                            <button className="btn-primary" onClick={goToPayment}>{t('continueToPayment')}</button>
                         </div>
                     </div>
                 )}
@@ -302,15 +317,15 @@ const Checkout = ({ plan, user, refreshUser, onBack, onComplete }) => {
                 {/* Step 2: Payment */}
                 {step === 2 && (
                     <div className="checkout-form-section">
-                        <h2>Secure Payment</h2>
+                        <h2>{t('securePayment')}</h2>
 
                         {/* Payment Method Tabs */}
                         <div className="payment-method-tabs">
-                            <button className={`method-tab ${paymentMethod === 'card' ? 'active' : ''}`} onClick={() => setPaymentMethod('card')}>Credit Card</button>
+                            <button className={`method-tab ${paymentMethod === 'card' ? 'active' : ''}`} onClick={() => setPaymentMethod('card')}>{t('creditCard')}</button>
                             {paymentRequest && (
-                                <button className={`method-tab ${paymentMethod === 'express' ? 'active' : ''}`} onClick={() => setPaymentMethod('express')}>Apple/Google Pay</button>
+                                <button className={`method-tab ${paymentMethod === 'express' ? 'active' : ''}`} onClick={() => setPaymentMethod('express')}>{t('appleGooglePay')}</button>
                             )}
-                            <button className={`method-tab ${paymentMethod === 'link' ? 'active' : ''}`} onClick={() => setPaymentMethod('link')}>Link ile Ödeme</button>
+                            <button className={`method-tab ${paymentMethod === 'link' ? 'active' : ''}`} onClick={() => setPaymentMethod('link')}>{t('linkPayment')}</button>
                         </div>
 
                         {paymentMethod === 'card' && (
@@ -388,9 +403,9 @@ const Checkout = ({ plan, user, refreshUser, onBack, onComplete }) => {
                                 </div>
 
                                 <div className="form-actions">
-                                    <button className="btn-secondary" onClick={() => setStep(1)} disabled={loading}>Back</button>
+                                    <button className="btn-secondary" onClick={() => setStep(1)} disabled={loading}>{t('back')}</button>
                                     <button className="btn-primary" onClick={handleCardPayment} disabled={loading || !stripe}>
-                                        {loading ? 'Processing...' : `Pay ${plan.price}`}
+                                        {loading ? t('processing') : `${t('pay')} $${totalAmount}`}
                                     </button>
                                 </div>
                             </>
@@ -398,26 +413,33 @@ const Checkout = ({ plan, user, refreshUser, onBack, onComplete }) => {
 
                         {paymentMethod === 'express' && paymentRequest && (
                             <div className="express-payment-section">
-                                <p className="subtitle" style={{ marginBottom: '20px', textAlign: 'center', color: '#aaa' }}>Fast checkout with Apple/Google Pay</p>
-                                <PaymentRequestButtonElement options={{ paymentRequest }} />
+                                <p className="subtitle" style={{ marginBottom: '20px', textAlign: 'center', color: '#aaa' }}>{t('securePayment')}</p>
+                                <div className="express-buttons-custom">
+                                    <button className="btn-express google-pay" onClick={() => paymentRequest.show()}>
+                                        <span>G</span> {t('payWithGooglePay')}
+                                    </button>
+                                    <button className="btn-express apple-pay" onClick={() => paymentRequest.show()}>
+                                        <span></span> {t('payWithApplePay')}
+                                    </button>
+                                </div>
                                 <div className="form-actions" style={{ marginTop: '40px' }}>
-                                    <button className="btn-secondary" onClick={() => setStep(1)}>Back</button>
+                                    <button className="btn-secondary" onClick={() => setStep(1)}>{t('back')}</button>
                                 </div>
                             </div>
                         )}
 
                         {paymentMethod === 'link' && (
                             <div className="link-payment-section">
-                                <p className="subtitle" style={{ marginBottom: '20px', color: '#aaa' }}>Link ile Ödeme Formu (Demo)</p>
+                                <p className="subtitle" style={{ marginBottom: '20px', color: '#aaa' }}>{t('linkPayment')}</p>
                                 <div className="form-grid">
                                     <div className="form-group">
-                                        <label>İsim</label>
-                                        <input name="firstName" value={linkInfo.firstName} onChange={handleLinkChange} placeholder="İsim" />
+                                        <label>{t('firstName')}</label>
+                                        <input name="firstName" value={linkInfo.firstName} onChange={handleLinkChange} placeholder={t('firstName')} />
                                         {errors.firstName && <span className="error-msg">{errors.firstName}</span>}
                                     </div>
                                     <div className="form-group">
-                                        <label>Soyisim</label>
-                                        <input name="lastName" value={linkInfo.lastName} onChange={handleLinkChange} placeholder="Soyisim" />
+                                        <label>{t('lastName')}</label>
+                                        <input name="lastName" value={linkInfo.lastName} onChange={handleLinkChange} placeholder={t('lastName')} />
                                         {errors.lastName && <span className="error-msg">{errors.lastName}</span>}
                                     </div>
                                     <div className="form-group full-width">
@@ -431,12 +453,12 @@ const Checkout = ({ plan, user, refreshUser, onBack, onComplete }) => {
                                         {errors.phone && <span className="error-msg">{errors.phone}</span>}
                                     </div>
                                     <div className="form-group full-width">
-                                        <label>Adres</label>
+                                        <label>{t('address_label')}</label>
                                         <textarea
                                             name="address"
                                             value={linkInfo.address}
                                             onChange={handleLinkChange}
-                                            placeholder="Açık adresiniz..."
+                                            placeholder="..."
                                             style={{
                                                 background: 'rgba(255, 255, 255, 0.05)',
                                                 border: '1px solid rgba(255, 255, 255, 0.1)',
@@ -449,11 +471,17 @@ const Checkout = ({ plan, user, refreshUser, onBack, onComplete }) => {
                                         {errors.address && <span className="error-msg">{errors.address}</span>}
                                     </div>
                                 </div>
+
                                 <div className="form-actions" style={{ marginTop: '30px' }}>
-                                    <button className="btn-secondary" onClick={() => setStep(1)}>Geri</button>
+                                    <button className="btn-secondary" onClick={() => setStep(1)}>{t('back')}</button>
                                     <button className="btn-primary" onClick={handleLinkSubmit} disabled={loading}>
-                                        {loading ? 'Gönderiliyor...' : 'Gönder'}
+                                        {loading ? t('processing') : t('submit')}
                                     </button>
+                                </div>
+
+                                <div className="link-logos" style={{ display: 'flex', gap: '20px', justifyContent: 'center', marginTop: '30px', padding: '15px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px' }}>
+                                    <img src={akbankLogo} alt="Akbank" style={{ height: '30px', opacity: 0.8 }} />
+                                    <img src={toslaLogo} alt="Tosla" style={{ height: '30px', opacity: 0.8 }} />
                                 </div>
                             </div>
                         )}
@@ -467,27 +495,27 @@ const Checkout = ({ plan, user, refreshUser, onBack, onComplete }) => {
                 {/* Summary Panel */}
                 {(step === 1 || step === 2) && (
                     <div className="order-summary">
-                        <h3>Order Summary</h3>
+                        <h3>{t('orderSummary')}</h3>
                         <div className="summary-row">
-                            <span className="summary-label">Plan</span>
-                            <span className="summary-value highlight">{plan.name} Package</span>
+                            <span className="summary-label">{t('plan')}</span>
+                            <span className="summary-value highlight">{t('monthly_package').replace('{name}', plan.name)}</span>
                         </div>
                         <div className="summary-row">
-                            <span className="summary-label">Billing Cycle</span>
-                            <span className="summary-value">Monthly</span>
+                            <span className="summary-label">{t('billingCycle')}</span>
+                            <span className="summary-value">{t('monthly')}</span>
                         </div>
                         <div className="summary-row">
-                            <span className="summary-label">Price</span>
-                            <span className="summary-value">{totalAmount}</span>
+                            <span className="summary-label">{t('price')}</span>
+                            <span className="summary-value">{plan.price}</span>
                         </div>
                         <div className="summary-row">
-                            <span className="summary-label">Tax (18%)</span>
+                            <span className="summary-label">{t('tax')}</span>
                             <span className="summary-value">${taxAmount}</span>
                         </div>
                         <div className="summary-divider"></div>
                         <div className="summary-row total">
-                            <span>Total</span>
-                            <span>{totalAmount}</span>
+                            <span>{t('total')}</span>
+                            <span>${totalAmount}</span>
                         </div>
                     </div>
                 )}
@@ -496,9 +524,9 @@ const Checkout = ({ plan, user, refreshUser, onBack, onComplete }) => {
                 {step === 3 && (
                     <div className="success-screen" style={{ gridColumn: 'span 2', textAlign: 'center', padding: '50px' }}>
                         <div style={{ fontSize: '4rem', marginBottom: '20px' }}>🎉</div>
-                        <h2 style={{ color: '#fff', fontSize: '2rem' }}>Subscription Activated!</h2>
+                        <h2 style={{ color: '#fff', fontSize: '2rem' }}>{t('subscriptionActivated')}</h2>
                         <p style={{ color: '#ccc', margin: '15px 0' }}>Welcome to the <strong>{plan.name}</strong> plan.</p>
-                        <p style={{ color: 'var(--gda-accent-primary)' }}>Redirecting to dashboard...</p>
+                        <p style={{ color: 'var(--gda-accent-primary)' }}>{t('redirectingToDashboard')}</p>
                     </div>
                 )}
 
@@ -506,12 +534,11 @@ const Checkout = ({ plan, user, refreshUser, onBack, onComplete }) => {
                 {step === 4 && (
                     <div className="error-screen" style={{ gridColumn: 'span 2', textAlign: 'center', padding: '50px' }}>
                         <div style={{ fontSize: '4rem', marginBottom: '20px' }}>❌</div>
-                        <h2 style={{ color: '#ff4757', fontSize: '2rem' }}>Transaction Failed</h2>
+                        <h2 style={{ color: '#ff4757', fontSize: '2rem' }}>{t('transactionFailed')}</h2>
                         <p style={{ color: '#ccc', margin: '15px 0' }}>An error occurred while processing your payment. Please try again.</p>
-                        <button className="btn-primary" onClick={() => setStep(2)}>Try Again</button>
+                        <button className="btn-primary" onClick={() => setStep(2)}>{t('tryAgain')}</button>
                     </div>
                 )}
-
             </div>
         </div>
     );

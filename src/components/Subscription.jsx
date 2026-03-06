@@ -99,6 +99,10 @@ const Subscription = ({ onSelectPlan }) => {
                             ))}
                         </div>
 
+                        <div className="plan-tax-notice" style={{ fontSize: '0.8rem', color: '#888', marginBottom: '10px', textAlign: 'center' }}>
+                            {t('taxesNotIncluded')}
+                        </div>
+
                         <button
                             className="btn-subscribe"
                             onClick={() => onSelectPlan(plan)}

@@ -233,10 +233,6 @@ export const translations = {
         feat_PrioritySupport: 'Öncelikli Topluluk Bileti',
         feat_Consultancy2h: '2 Saat Danışmanlık',
 
-        // Checkout
-        checkoutTitle: 'Ödeme',
-        payNow: 'Şimdi Öde',
-        orderSummary: 'Sipariş Özeti',
 
         // Community
         communityTitle: 'Topluluk',
@@ -252,6 +248,40 @@ export const translations = {
 
         // Student Community Hub
         studentCommunityHub: 'Öğrenci Topluluk Merkezi',
+
+        // New Checkout & Payment Keys
+        billingInformation: 'Fatura Bilgileri',
+        billingType: 'Fatura Tipi',
+        individual: 'Bireysel',
+        corporate: 'Kurumsal',
+        firstName: 'İsim',
+        lastName: 'Soyisim',
+        companyName: 'Şirket Adı',
+        taxId: 'Vergi No / TC Kimlik',
+        address_label: 'Adres',
+        city: 'Şehir',
+        zipCode: 'Posta Kodu',
+        continueToPayment: 'Ödemeye Devam Et',
+        securePayment: 'Güvenli Ödeme',
+        creditCard: 'Kredi Kartı',
+        appleGooglePay: 'Apple/Google Pay',
+        linkPayment: 'Link ile Ödeme',
+        payWithApplePay: 'Apple Pay ile Öde',
+        payWithGooglePay: 'Google Pay ile Öde',
+        taxesNotIncluded: 'Vergiler Dahil Değildir',
+        tax: 'Vergi (%20)',
+        total: 'Toplam',
+        billingCycle: 'Ödeme Periyodu',
+        monthly: 'Aylık',
+        pay: 'Öde',
+        processing: 'İşleniyor...',
+        subscriptionActivated: 'Abonelik Aktif Edildi!',
+        transactionFailed: 'İşlem Başarısız',
+        tryAgain: 'Tekrar Dene',
+        redirectingToDashboard: 'Dashboard\'a yönlendiriliyorsunuz...',
+        orderSummary: 'Sipariş Özeti',
+        plan: 'Plan',
+        monthly_package: '{name} Paketi',
     },
 
     en: {
@@ -491,7 +521,6 @@ export const translations = {
         // Checkout
         checkoutTitle: 'Checkout',
         payNow: 'Pay Now',
-        orderSummary: 'Order Summary',
 
         // Community
         communityTitle: 'Community',
@@ -507,6 +536,40 @@ export const translations = {
 
         // Student Community Hub
         studentCommunityHub: 'Student Community Hub',
+
+        // New Checkout & Payment Keys
+        billingInformation: 'Billing Information',
+        billingType: 'Billing Type',
+        individual: 'Individual',
+        corporate: 'Corporate',
+        firstName: 'First Name',
+        lastName: 'Last Name',
+        companyName: 'Company Name',
+        taxId: 'Tax ID',
+        address_label: 'Address',
+        city: 'City',
+        zipCode: 'Zip Code',
+        continueToPayment: 'Continue to Payment',
+        securePayment: 'Secure Payment',
+        creditCard: 'Credit Card',
+        appleGooglePay: 'Apple/Google Pay',
+        linkPayment: 'Link with Payment',
+        payWithApplePay: 'Pay with Apple Pay',
+        payWithGooglePay: 'Pay with Google Pay',
+        taxesNotIncluded: 'Taxes Not Included',
+        tax: 'Tax (%20)',
+        total: 'Total',
+        billingCycle: 'Billing Cycle',
+        monthly: 'Monthly',
+        pay: 'Pay',
+        processing: 'Processing...',
+        subscriptionActivated: 'Subscription Activated!',
+        transactionFailed: 'Transaction Failed',
+        tryAgain: 'Try Again',
+        redirectingToDashboard: 'Redirecting to dashboard...',
+        orderSummary: 'Order Summary',
+        plan: 'Plan',
+        monthly_package: '{name} Package',
     },
 
     fr: {
@@ -746,7 +809,6 @@ export const translations = {
         // Checkout
         checkoutTitle: 'Paiement',
         payNow: 'Payer Maintenant',
-        orderSummary: 'Résumé de Commande',
 
         // Community
         communityTitle: 'Communauté',
@@ -762,6 +824,40 @@ export const translations = {
 
         // Student Community Hub
         studentCommunityHub: 'Hub Communautaire Étudiant',
+
+        // New Checkout & Payment Keys
+        billingInformation: 'Informations de Facturation',
+        billingType: 'Type de Facturation',
+        individual: 'Individuel',
+        corporate: 'Entreprise',
+        firstName: 'Prénom',
+        lastName: 'Nom',
+        companyName: 'Nom de l\'entreprise',
+        taxId: 'ID Fiscal',
+        address_label: 'Adresse',
+        city: 'Ville',
+        zipCode: 'Code Postal',
+        continueToPayment: 'Continuer vers le Paiement',
+        securePayment: 'Paiement Sécurisé',
+        creditCard: 'Carte de Crédit',
+        appleGooglePay: 'Apple/Google Pay',
+        linkPayment: 'Lien de Paiement',
+        payWithApplePay: 'Payer avec Apple Pay',
+        payWithGooglePay: 'Payer avec Google Pay',
+        taxesNotIncluded: 'Taxes non incluses',
+        tax: 'Taxe (%20)',
+        total: 'Total',
+        billingCycle: 'Cycle de Facturation',
+        monthly: 'Mensuel',
+        pay: 'Payer',
+        processing: 'Traitement...',
+        subscriptionActivated: 'Abonnement Activé !',
+        transactionFailed: 'Échec de la Transaction',
+        tryAgain: 'Réessayer',
+        redirectingToDashboard: 'Redirection vers le tableau de bord...',
+        orderSummary: 'Résumé de la Commande',
+        plan: 'Plan',
+        monthly_package: 'Forfait {name}',
     },
 
     de: {
@@ -1001,7 +1097,6 @@ export const translations = {
         // Checkout
         checkoutTitle: 'Kasse',
         payNow: 'Jetzt Bezahlen',
-        orderSummary: 'Bestellübersicht',
 
         // Community
         communityTitle: 'Gemeinschaft',
@@ -1017,6 +1112,40 @@ export const translations = {
 
         // Student Community Hub
         studentCommunityHub: 'Studenten-Community-Hub',
+
+        // New Checkout & Payment Keys
+        billingInformation: 'Rechnungsinformationen',
+        billingType: 'Rechnungsart',
+        individual: 'Privatperson',
+        corporate: 'Unternehmen',
+        firstName: 'Vorname',
+        lastName: 'Nachname',
+        companyName: 'Firmenname',
+        taxId: 'Steuer-ID',
+        address_label: 'Adresse',
+        city: 'Stadt',
+        zipCode: 'Postleitzahl',
+        continueToPayment: 'Weiter zur Zahlung',
+        securePayment: 'Sichere Zahlung',
+        creditCard: 'Kreditkarte',
+        appleGooglePay: 'Apple/Google Pay',
+        linkPayment: 'Link-Zahlung',
+        payWithApplePay: 'Mit Apple Pay bezahlen',
+        payWithGooglePay: 'Mit Google Pay bezahlen',
+        taxesNotIncluded: 'Steuern nicht inbegriffen',
+        tax: 'Steuer (%20)',
+        total: 'Gesamt',
+        billingCycle: 'Abrechnungszeitraum',
+        monthly: 'Monatlich',
+        pay: 'Bezahlen',
+        processing: 'Wird verarbeitet...',
+        subscriptionActivated: 'Abonnement Aktiviert!',
+        transactionFailed: 'Transaktion Fehlgeschlagen',
+        tryAgain: 'Erneut versuchen',
+        redirectingToDashboard: 'Weiterleitung zum Dashboard...',
+        orderSummary: 'Bestellübersicht',
+        plan: 'Plan',
+        monthly_package: '{name} Paket',
     }
 };
 
