@@ -71,8 +71,6 @@ const Checkout = ({ plan, user, refreshUser, onBack, onComplete }) => {
             });
 
             pr.on('paymentmethod', async (ev) => {
-                // Confirm the PaymentIntent on the backend if needed
-                // For demo, we just succeed
                 ev.complete('success');
                 handleSuccess(ev.paymentMethod.id);
             });

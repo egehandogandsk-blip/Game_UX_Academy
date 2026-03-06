@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Routes, Route, Navigate, useNavigate, useParams, useLocation } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { initDatabase, dbOperations } from './database/schema.js';
 import { seedDatabase } from './database/seed.js';
 import { seedMissions, fillMissingMissions, syncMissionDescriptions } from './database/missions.js';
@@ -125,17 +125,17 @@ const AppContent = () => {
     init();
   }, []);
 
+  const loadActiveMissions = useCallback(async () => {
+    if (!currentUser) return;
+    await MissionManager.getActiveMissions(currentUser.id);
+  }, [currentUser]);
+
   // Load missions when user changes
   useEffect(() => {
     if (currentUser) {
       loadActiveMissions();
     }
-  }, [currentUser]);
-
-  const loadActiveMissions = async () => {
-    if (!currentUser) return;
-    await MissionManager.getActiveMissions(currentUser.id);
-  };
+  }, [currentUser, loadActiveMissions]);
 
   // ... Handlers (GameSelect, etc) ...
   const handleGameSelect = (game) => {
