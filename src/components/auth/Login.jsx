@@ -73,7 +73,7 @@ const Login = () => {
                     <div className="banner-header">
                         <h3>Game UX Lectures Coming Soon</h3>
                     </div>
-                    <a href="#" target="_blank" rel="noopener noreferrer" className="btn-banner">
+                    <a href="/apply-ux-lectures.html" target="_blank" rel="noopener noreferrer" className="btn-banner">
                         Click for Early Registration and Information
                     </a>
                 </div>
