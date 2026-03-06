@@ -1,34 +1,42 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { dbOperations } from '../database/schema.js';
 import AIFeedback from './AIFeedback';
+import { useT } from '../contexts/LanguageContext';
 import './Inbox.css';
 
 const Inbox = ({ userId }) => {
+    const t = useT();
     const [messages, setMessages] = useState([]);
     const [selectedMessage, setSelectedMessage] = useState(null);
     const [filter, setFilter] = useState('all'); // all, unread, read
+    const [loading, setLoading] = useState(true);
+
+    const loadMessages = useCallback(async () => {
+        try {
+            setLoading(true);
+            const feedbacks = await dbOperations.getAll('ai_feedback');
+            // Combine feedbacks into message format
+            const feedbackMessages = feedbacks.map(f => ({
+                ...f,
+                id: f.id,
+                title: 'AI Analysis Result',
+                sender: 'GDA AI',
+                preview: f.textualFeedback?.summary?.slice(0, 50) || t('aiAnalysisProcessing'),
+                time: f.createdAt ? new Date(f.createdAt).toLocaleTimeString() : '',
+                read: f.read || false,
+                category: 'system'
+            }));
+            setMessages(feedbackMessages);
+            setLoading(false);
+        } catch (error) {
+            console.error('Error loading messages:', error);
+            setLoading(false);
+        }
+    }, [t]);
 
     useEffect(() => {
         loadMessages();
-    }, [userId]);
-
-    const loadMessages = async () => {
-        try {
-            const feedbacks = await dbOperations.getAll('ai_feedback');
-            const userSubmissions = await dbOperations.query('submissions', 'userId', userId);
-            const userSubmissionIds = userSubmissions.map(s => s.id);
-
-            const userFeedbacks = feedbacks.filter(f =>
-                userSubmissionIds.includes(f.submissionId)
-            );
-
-            setMessages(userFeedbacks.sort((a, b) =>
-                new Date(b.createdAt) - new Date(a.createdAt)
-            ));
-        } catch (error) {
-            console.error('Error loading messages:', error);
-        }
-    };
+    }, [userId, loadMessages]);
 
     const filteredMessages = messages.filter(msg => {
         if (filter === 'unread') return !msg.read;
@@ -39,9 +47,9 @@ const Inbox = ({ userId }) => {
     const markAsRead = async (messageId) => {
         const message = messages.find(m => m.id === messageId);
         if (message && !message.read) {
-            message.read = true;
-            await dbOperations.update('ai_feedback', message);
-            setMessages([...messages]);
+            const updatedMessage = { ...message, read: true };
+            await dbOperations.update('ai_feedback', updatedMessage);
+            setMessages(prev => prev.map(m => m.id === messageId ? updatedMessage : m));
         }
     };
 
@@ -50,11 +58,12 @@ const Inbox = ({ userId }) => {
         await markAsRead(message.id);
     };
 
-    const getMessagePreview = (feedback) => {
-        return feedback.textualFeedback?.summary || 'AI Feedback Report';
+    const getMessagePreview = (message) => {
+        return message.textualFeedback?.summary || t('aiFeedbackReport');
     };
 
     const formatDate = (dateString) => {
+        if (!dateString) return '';
         const date = new Date(dateString);
         const now = new Date();
         const diffMs = now - date;
@@ -68,13 +77,21 @@ const Inbox = ({ userId }) => {
         return date.toLocaleDateString();
     };
 
+    if (loading && messages.length === 0) {
+        return (
+            <div className="inbox-container">
+                <div className="loading-state">{t('loading')}...</div>
+            </div>
+        );
+    }
+
     return (
         <div className="inbox-container">
             <div className="inbox-header">
-                <h2>AI Feedback Inbox</h2>
+                <h2>{t('aiFeedbackInbox')}</h2>
                 <div className="inbox-stats">
                     <span className="unread-count">
-                        {messages.filter(m => !m.read).length} unread
+                        {messages.filter(m => !m.read).length} {t('unread')}
                     </span>
                 </div>
             </div>
@@ -84,19 +101,19 @@ const Inbox = ({ userId }) => {
                     className={`filter-btn ${filter === 'all' ? 'active' : ''}`}
                     onClick={() => setFilter('all')}
                 >
-                    All ({messages.length})
+                    {t('all')} ({messages.length})
                 </button>
                 <button
                     className={`filter-btn ${filter === 'unread' ? 'active' : ''}`}
                     onClick={() => setFilter('unread')}
                 >
-                    Unread ({messages.filter(m => !m.read).length})
+                    {t('unreadFilter')} ({messages.filter(m => !m.read).length})
                 </button>
                 <button
                     className={`filter-btn ${filter === 'read' ? 'active' : ''}`}
                     onClick={() => setFilter('read')}
                 >
-                    Read ({messages.filter(m => m.read).length})
+                    {t('read')} ({messages.filter(m => m.read).length})
                 </button>
             </div>
 
@@ -105,10 +122,10 @@ const Inbox = ({ userId }) => {
                     <div className="no-messages">
                         <div className="no-messages-icon">📭</div>
                         <div className="no-messages-text">
-                            {filter === 'unread' ? 'No unread messages' : 'No messages yet'}
+                            {filter === 'unread' ? t('noUnreadMessages') : t('noMessagesYet')}
                         </div>
                         <div className="no-messages-subtext">
-                            Complete a mission to receive AI feedback
+                            {t('completeForFeedback')}
                         </div>
                     </div>
                 ) : (
@@ -124,7 +141,7 @@ const Inbox = ({ userId }) => {
                             <div className="message-content">
                                 <div className="message-header">
                                     <div className="message-title">
-                                        Design Analysis Report
+                                        {t('designAnalysisReport')}
                                     </div>
                                     <div className="message-time">{formatDate(message.createdAt)}</div>
                                 </div>
@@ -133,7 +150,7 @@ const Inbox = ({ userId }) => {
                                 </div>
                                 <div className="message-footer">
                                     <span className="message-score">
-                                        Score: {message.overallScore}/100
+                                        {t('score')} {message.overallScore || 0}/100
                                     </span>
                                     {!message.read && (
                                         <span className="unread-dot"></span>

@@ -1,13 +1,15 @@
 import React from 'react';
+import { useT } from '../contexts/LanguageContext';
 import './BottomNav.css';
 
 const BottomNav = ({ currentPage, onNavigate }) => {
+    const t = useT();
     const navItems = [
-        { id: 'dashboard', icon: '🏠', label: 'Home' },
-        { id: 'games', icon: '🎮', label: 'Games' },
-        { id: 'missions', icon: '🎯', label: 'Missions' },
-        { id: 'inbox', icon: '📬', label: 'Inbox' },
-        { id: 'profile', icon: '👤', label: 'Profile' },
+        { id: 'dashboard', icon: '🏠', label: t('home') },
+        { id: 'games', icon: '🎮', label: t('games') },
+        { id: 'missions', icon: '🎯', label: t('missions') },
+        { id: 'inbox', icon: '📬', label: t('inbox') },
+        { id: 'profile', icon: '👤', label: t('profile') },
     ];
 
     return (

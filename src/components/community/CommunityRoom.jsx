@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
+import { useT } from '../../contexts/LanguageContext';
 import '../Community.css';
 
 const CommunityRoom = ({ user }) => {
+    const t = useT();
     const [filter, setFilter] = useState('all'); // all, discussion, question, showcase
 
-    // Dummy Posts Data
+    // Dummy Posts Data - Real app would fetch this
     const [posts, setPosts] = useState([
         {
             id: 1,
@@ -42,8 +44,8 @@ const CommunityRoom = ({ user }) => {
             author: 'Elara V.',
             avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
             type: 'showcase',
-            title: 'Just launched my new portfolio! 🚀',
-            content: 'Would love some feedback on the case studies. I tried to focus more on the process rather than just glossy UIs.',
+            title: t('justLaunchedPortfolio') || 'Just launched my new portfolio! 🚀',
+            content: 'Would love some feedback on the case studies.',
             tags: ['Portfolio', 'Feedback'],
             likes: 89,
             comments: 0,
@@ -65,7 +67,7 @@ const CommunityRoom = ({ user }) => {
         e.preventDefault();
         const newPost = {
             id: Date.now(),
-            author: user ? user.name : 'You',
+            author: user ? user.fullName : 'You',
             avatar: user ? user.profilePhoto : 'https://via.placeholder.com/150',
             ...newPostContent,
             tags: ['Community'],
@@ -120,7 +122,7 @@ const CommunityRoom = ({ user }) => {
             if (post.id === postId) {
                 const newComment = {
                     id: Date.now(),
-                    author: user ? user.name : 'You',
+                    author: user ? user.fullName : 'You',
                     avatar: user ? user.profilePhoto : 'https://via.placeholder.com/30',
                     content: commentInput,
                     time: 'Just now'
@@ -144,45 +146,45 @@ const CommunityRoom = ({ user }) => {
                 {/* Left Sidebar: Filters & Stats */}
                 <div className="room-sidebar">
                     <button className="btn-new-post" onClick={() => setIsPostModalOpen(true)}>
-                        + Start Discussion
+                        + {t('startDiscussion')}
                     </button>
 
                     <div className="room-filters">
-                        <h3>Feeds</h3>
+                        <h3>{t('feeds')}</h3>
                         <button
                             className={`filter-btn ${filter === 'all' ? 'active' : ''}`}
                             onClick={() => setFilter('all')}
                         >
-                            🌍 All Posts
+                            🌍 {t('allPosts')}
                         </button>
                         <button
                             className={`filter-btn ${filter === 'discussion' ? 'active' : ''}`}
                             onClick={() => setFilter('discussion')}
                         >
-                            💬 Discussions
+                            💬 {t('discussions')}
                         </button>
                         <button
                             className={`filter-btn ${filter === 'question' ? 'active' : ''}`}
                             onClick={() => setFilter('question')}
                         >
-                            ❓ Q&A
+                            ❓ {t('qa')}
                         </button>
                         <button
                             className={`filter-btn ${filter === 'showcase' ? 'active' : ''}`}
                             onClick={() => setFilter('showcase')}
                         >
-                            🔥 Showcase
+                            🔥 {t('showcase')}
                         </button>
                     </div>
 
                     <div className="room-stats">
-                        <h3>Community Stats</h3>
+                        <h3>{t('communityStats')}</h3>
                         <div className="stat-row">
-                            <span>Members</span>
+                            <span>{t('members')}</span>
                             <strong>1.2k</strong>
                         </div>
                         <div className="stat-row">
-                            <span>Online</span>
+                            <span>{t('online')}</span>
                             <strong className="online-dot">142</strong>
                         </div>
                     </div>
@@ -196,7 +198,7 @@ const CommunityRoom = ({ user }) => {
                                 <img src={post.avatar} alt={post.author} className="post-avatar" />
                                 <div className="post-meta">
                                     <div className="post-author">{post.author}</div>
-                                    <div className="post-time">{post.time} • <span className={`tag-${post.type}`}>{post.type}</span></div>
+                                    <div className="post-time">{post.time} • <span className={`tag-${post.type}`}>{t(post.type)}</span></div>
                                 </div>
                             </div>
                             <div className="post-body">
@@ -217,10 +219,10 @@ const CommunityRoom = ({ user }) => {
                                         {likedPosts.has(post.id) ? '❤️' : '🤍'} {post.likes}
                                     </button>
                                     <button onClick={() => toggleComments(post.id)}>
-                                        🗨️ {post.comments} {activeCommentId === post.id ? '⬆️' : '⬇️'}
+                                        🗨️ {post.comments} {activeCommentId === post.id ? '▲' : '▼'}
                                     </button>
                                     <button onClick={() => handleShare(post.id)}>
-                                        {copiedPostId === post.id ? '✅ Copied!' : '🔗 Share'}
+                                        {copiedPostId === post.id ? `✅ ${t('copied')}!` : `🔗 ${t('share')}`}
                                     </button>
                                 </div>
                             </div>
@@ -229,9 +231,9 @@ const CommunityRoom = ({ user }) => {
                             {activeCommentId === post.id && (
                                 <div className="comment-section open">
                                     <div className="comment-header-row">
-                                        <h5>Comments ({post.comments})</h5>
+                                        <h5>{t('comments')} ({post.comments})</h5>
                                         <button className="btn-collapse" onClick={() => setActiveCommentId(null)}>
-                                            Daralt 🔼
+                                            {t('collapse')} ▲
                                         </button>
                                     </div>
 
@@ -249,14 +251,14 @@ const CommunityRoom = ({ user }) => {
                                             </div>
                                         ))}
                                         {(!post.commentList || post.commentList.length === 0) && (
-                                            <p className="no-comments">No comments yet. Be the first!</p>
+                                            <p className="no-comments">{t('noCommentsYet')}</p>
                                         )}
                                     </div>
 
                                     <div className="comment-input-area">
                                         <input
                                             type="text"
-                                            placeholder="Write a comment..."
+                                            placeholder={t('writeAComment')}
                                             value={commentInput}
                                             onChange={(e) => setCommentInput(e.target.value)}
                                             onKeyDown={(e) => {
@@ -267,7 +269,7 @@ const CommunityRoom = ({ user }) => {
                                             className="btn-primary btn-sm"
                                             onClick={() => handleCommentSubmit(post.id)}
                                         >
-                                            Send
+                                            {t('send')}
                                         </button>
                                     </div>
                                 </div>
@@ -282,28 +284,28 @@ const CommunityRoom = ({ user }) => {
                 <div className="modal-overlay" onClick={() => setIsPostModalOpen(false)}>
                     <div className="modal-content community-modal" onClick={e => e.stopPropagation()}>
                         <div className="modal-header">
-                            <h2>Create New Post</h2>
+                            <h2>{t('createNewPost')}</h2>
                             <button className="close-btn" onClick={() => setIsPostModalOpen(false)}>&times;</button>
                         </div>
                         <div className="modal-body">
                             <form onSubmit={handlePostSubmit}>
                                 <div className="form-group">
-                                    <label>Topic Type</label>
+                                    <label>{t('topicType')}</label>
                                     <select
                                         value={newPostContent.type}
                                         onChange={(e) => setNewPostContent({ ...newPostContent, type: e.target.value })}
                                         className="input"
                                     >
-                                        <option value="discussion">Discussion</option>
-                                        <option value="question">Question</option>
-                                        <option value="showcase">Showcase</option>
+                                        <option value="discussion">{t('discussion')}</option>
+                                        <option value="question">{t('question')}</option>
+                                        <option value="showcase">{t('showcase')}</option>
                                     </select>
                                 </div>
                                 <div className="form-group">
-                                    <label>Title</label>
+                                    <label>{t('title')}</label>
                                     <input
                                         type="text"
-                                        placeholder="What's on your mind?"
+                                        placeholder={t('tellUsAboutYou')}
                                         value={newPostContent.title}
                                         onChange={(e) => setNewPostContent({ ...newPostContent, title: e.target.value })}
                                         required
@@ -311,10 +313,10 @@ const CommunityRoom = ({ user }) => {
                                     />
                                 </div>
                                 <div className="form-group">
-                                    <label>Content</label>
+                                    <label>{t('content')}</label>
                                     <textarea
                                         rows="5"
-                                        placeholder="Elaborate your thoughts..."
+                                        placeholder={t('bio')}
                                         value={newPostContent.content}
                                         onChange={(e) => setNewPostContent({ ...newPostContent, content: e.target.value })}
                                         className="modal-textarea"
@@ -322,8 +324,8 @@ const CommunityRoom = ({ user }) => {
                                     ></textarea>
                                 </div>
                                 <div className="modal-footer">
-                                    <button type="button" className="btn btn-secondary" onClick={() => setIsPostModalOpen(false)}>Cancel</button>
-                                    <button type="submit" className="btn btn-primary">Post</button>
+                                    <button type="button" className="btn btn-secondary" onClick={() => setIsPostModalOpen(false)}>{t('cancel')}</button>
+                                    <button type="submit" className="btn btn-primary">{t('post')}</button>
                                 </div>
                             </form>
                         </div>

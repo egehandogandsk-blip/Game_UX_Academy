@@ -1,87 +1,105 @@
 .subscription-container {
     max-width: 1400px;
     margin: 0 auto;
-    padding: var(--spacing-lg);
+    padding: var(--spacing-xl);
     display: flex;
     flex-direction: column;
     gap: var(--spacing-xl);
-    height: 100vh;
+    min-height: 100vh;
     justify-content: center;
-    overflow: hidden;
+    overflow-y: auto;
+    background: radial-gradient(circle at top right, rgba(246, 204, 50, 0.05), transparent 40%),
+        radial-gradient(circle at bottom left, rgba(255, 255, 255, 0.02), transparent 40%);
 }
 
 .subscription-header {
     text-align: center;
-    margin-bottom: -10px;
+    margin-bottom: var(--spacing-lg);
+    animation: fadeInDown 0.8s ease-out;
 }
 
-.subscription-header h1 {
-    font-size: 2.2rem;
-    margin-bottom: var(--spacing-xs);
-    background: linear-gradient(135deg, var(--gda-text-primary), var(--gda-text-secondary));
+.premium-title {
+    font-size: 3rem;
+    font-weight: 900;
+    margin-bottom: var(--spacing-sm);
+    background: linear-gradient(135deg, #ffffff 0%, rgba(255, 255, 255, 0.7) 100%);
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
+    letter-spacing: -1px;
+    text-transform: capitalize;
 }
 
-.subscription-header p {
+.premium-subtitle {
     color: var(--gda-text-secondary);
-    font-size: var(--font-size-md);
+    font-size: 1.1rem;
+    max-width: 600px;
+    margin: 0 auto;
+    opacity: 0.8;
+    line-height: 1.6;
 }
 
 .plans-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: var(--spacing-lg);
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: var(--spacing-xl);
     align-items: stretch;
+    padding: var(--spacing-md);
 }
 
 .plan-card {
-    background: var(--gda-bg-secondary);
-    border: 1px solid var(--gda-border);
-    border-radius: var(--radius-lg);
-    padding: var(--spacing-xl);
+    background: rgba(25, 25, 25, 0.4);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 24px;
+    padding: 40px 30px;
     display: flex;
     flex-direction: column;
     gap: var(--spacing-lg);
     position: relative;
-    transition: transform var(--transition-base), box-shadow var(--transition-base);
-    overflow: hidden;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .plan-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
-    border-color: var(--gda-text-secondary);
+    transform: translateY(-10px);
+    border-color: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+    background: rgba(25, 25, 25, 0.6);
 }
 
-/* Highlighted Plan (Prime) */
+.popular-badge {
+    position: absolute;
+    top: -12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--gda-accent-primary);
+    color: #000;
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    box-shadow: 0 4px 15px rgba(246, 204, 50, 0.3);
+}
+
 .plan-card.highlight {
-    background: linear-gradient(145deg, rgba(246, 204, 50, 0.05), var(--gda-bg-secondary));
     border: 2px solid var(--gda-accent-primary);
-    transform: scale(1.02);
-    z-index: 2;
-    box-shadow: 0 0 30px rgba(246, 204, 50, 0.1);
-}
-
-.plan-card.highlight:hover {
-    transform: scale(1.05) translateY(-10px);
-    box-shadow: 0 20px 50px rgba(246, 204, 50, 0.2);
+    background: rgba(30, 30, 30, 0.6);
+    box-shadow: 0 0 40px rgba(246, 204, 50, 0.1);
 }
 
 .plan-header {
     text-align: center;
-    border-bottom: 1px solid var(--gda-border);
-    padding-bottom: var(--spacing-lg);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    padding-bottom: 30px;
 }
 
 .plan-name {
-    font-size: 1.5rem;
+    font-size: 1.4rem;
     font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-bottom: var(--spacing-sm);
-    color: var(--gda-text-primary);
+    margin-bottom: 10px;
+    color: #fff;
 }
 
 .plan-card.highlight .plan-name {
@@ -92,73 +110,94 @@
     display: flex;
     align-items: baseline;
     justify-content: center;
-    gap: 4px;
+    gap: 6px;
 }
 
 .currency {
-    font-size: 2rem;
-    font-weight: 800;
-    color: var(--gda-text-primary);
+    font-size: 2.5rem;
+    font-weight: 900;
+    color: #fff;
 }
 
 .period {
     color: var(--gda-text-secondary);
-    font-size: 0.8rem;
-    font-weight: 600;
+    font-size: 0.9rem;
+    font-weight: 500;
 }
 
 .plan-features {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 14px;
     flex: 1;
+    margin: 10px 0;
 }
 
 .feature-item {
     display: flex;
     align-items: flex-start;
-    gap: var(--spacing-sm);
-    color: var(--gda-text-secondary);
-    font-size: 0.85rem;
-    line-height: 1.3;
+    gap: 12px;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.9rem;
+    line-height: 1.4;
 }
 
 .check-icon {
     color: var(--gda-accent-primary);
-    font-weight: 800;
-    flex-shrink: 0;
+    font-weight: bold;
+    font-size: 1.1rem;
 }
 
 .btn-subscribe {
     width: 100%;
-    padding: 10px;
-    background: transparent;
-    border: 2px solid var(--gda-text-primary);
-    color: var(--gda-text-primary);
+    padding: 14px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #fff;
     font-weight: 700;
-    text-transform: uppercase;
     cursor: pointer;
-    transition: all var(--transition-base);
-    border-radius: var(--radius-md);
-    margin-top: auto;
-    font-size: 0.85rem;
+    transition: all 0.3s ease;
+    border-radius: 12px;
+    font-size: 0.9rem;
 }
 
 .btn-subscribe:hover {
-    background: var(--gda-text-primary);
-    color: var(--gda-bg-primary);
+    background: #fff;
+    color: #000;
 }
 
 .plan-card.highlight .btn-subscribe {
     background: var(--gda-accent-primary);
-    border-color: var(--gda-accent-primary);
-    color: var(--gda-bg-primary);
+    border: none;
+    color: #000;
 }
 
 .plan-card.highlight .btn-subscribe:hover {
     background: #ffd966;
-    border-color: #ffd966;
     transform: scale(1.02);
+}
+
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (max-width: 1200px) {
+    .plans-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .subscription-container {
+        height: auto;
+        padding-top: 80px;
+    }
 }
 
 @media (max-width: 768px) {
@@ -166,11 +205,7 @@
         grid-template-columns: 1fr;
     }
 
-    .plan-card.highlight {
-        transform: none;
-    }
-
-    .plan-card.highlight:hover {
-        transform: translateY(-5px);
+    .premium-title {
+        font-size: 2.2rem;
     }
 }

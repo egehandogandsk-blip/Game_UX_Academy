@@ -4,8 +4,9 @@ import { MissionManager } from '../utils/missionManager.js';
 import { analyzeSubmission } from '../utils/AIAnalysisService.js';
 import SubmissionForm from './SubmissionForm';
 import AnalysisResultModal from './AnalysisResultModal';
+import { motion, AnimatePresence } from 'framer-motion';
 import { badgedata } from '../data/badges';
-import { motion } from 'framer-motion';
+import { useT } from '../contexts/LanguageContext';
 import './Profile.styles.css';
 
 const containerVariants = {
@@ -28,6 +29,7 @@ const itemVariants = {
 };
 
 const Profile = ({ userId }) => {
+    const t = useT();
     const [user, setUser] = useState(null);
     const [isEditing, setIsEditing] = useState(false);
     const [editData, setEditData] = useState(null);
@@ -103,10 +105,10 @@ const Profile = ({ userId }) => {
             await dbOperations.update('users', userId, editData);
             setUser(editData);
             setIsEditing(false);
-            alert('Profile updated successfully!');
+            alert(t('profileUpdated'));
         } catch (error) {
             console.error('Error updating profile:', error);
-            alert('Error updating profile. Please try again.');
+            alert(t('error'));
         }
     };
 
@@ -137,7 +139,10 @@ const Profile = ({ userId }) => {
         if (window.triggerAIAssistant) {
             window.triggerAIAssistant('analysis_ready', {
                 score: analysis.score,
-                onClick: () => setAnalysisResult(analysis) // Re-open modal if closed
+                onClick: () => {
+                    setAnalysisResult(analysis);
+                    setShowSubmissionForm(false); // Close submission form when showing result
+                }
             });
         }
     };
@@ -185,11 +190,11 @@ const Profile = ({ userId }) => {
                 // Close Modals
                 setAnalysisResult(null);
                 setAnalyzingSubmission(null);
-                alert(`Mission Completed! +${mission.xp || 100} XP Earned! 🚀`);
+                alert(`${t('missionCompleted')}! +${mission.xp || 100} XP Earned! 🚀`);
             }
         } catch (error) {
             console.error("Completion Error", error);
-            alert("Failed to save mission completion.");
+            alert(t('error'));
         }
     };
 
@@ -227,7 +232,7 @@ const Profile = ({ userId }) => {
         return (
             <div className="profile-loading">
                 <div className="loading-spinner"></div>
-                <p>Loading profile...</p>
+                <p>{t('loading')}</p>
             </div>
         );
     }
@@ -235,7 +240,7 @@ const Profile = ({ userId }) => {
     if (!user) {
         return (
             <div className="profile-error">
-                <p>User not found</p>
+                <p>{t('noResults')}</p>
             </div>
         );
     }
@@ -258,15 +263,15 @@ const Profile = ({ userId }) => {
                     <div className="profile-card-controls">
                         {!isEditing ? (
                             <button className="btn-edit-profile-mini" onClick={handleEdit}>
-                                ✏️ Edit
+                                ✏️ {t('edit')}
                             </button>
                         ) : (
                             <div className="edit-controls-mini">
                                 <button className="btn-glass-secondary" onClick={handleCancel}>
-                                    Cancel
+                                    {t('cancel')}
                                 </button>
                                 <button className="btn-glass-primary" onClick={handleSave}>
-                                    💾 Save
+                                    💾 {t('save')}
                                 </button>
                             </div>
                         )}
@@ -309,7 +314,7 @@ const Profile = ({ userId }) => {
                                     className="input profile-name-input"
                                     value={editData.fullName || ''}
                                     onChange={(e) => setEditData({ ...editData, fullName: e.target.value })}
-                                    placeholder="Your full name"
+                                    placeholder={t('tellUsAboutYou')}
                                 />
                             ) : (
                                 <h1 className="profile-name">{displayData.fullName || 'Anonymous User'}</h1>
@@ -323,7 +328,7 @@ const Profile = ({ userId }) => {
                             </span>
                             <span className="premium-badge badge-level">
                                 <span className="badge-icon">⭐</span>
-                                Level {displayData.level || 1}
+                                {t('level')} {displayData.level || 1}
                             </span>
                             <span className="premium-badge badge-xp">
                                 <span className="badge-icon">⚡</span>
@@ -337,7 +342,7 @@ const Profile = ({ userId }) => {
                                     className="input bio-input"
                                     value={editData.bio || ''}
                                     onChange={(e) => setEditData({ ...editData, bio: e.target.value })}
-                                    placeholder="Write a short bio about your professional journey..."
+                                    placeholder={t('bio')}
                                     rows="2"
                                 />
                             ) : displayData.bio ? (
@@ -367,7 +372,7 @@ const Profile = ({ userId }) => {
 
             {/* ACTIVE MISSIONS - NEW SECTION */}
             <motion.div className="profile-section active-missions-section" variants={itemVariants}>
-                <h2>🚀 Active Missions</h2>
+                <h2>🚀 {t('activeMissions')}</h2>
                 {activeMissions.length > 0 ? (
                     <div className="missions-grid">
                         {activeMissions.map(mission => (
@@ -384,21 +389,21 @@ const Profile = ({ userId }) => {
                                     className="btn btn-primary btn-sm btn-submit-mission"
                                     onClick={() => openSubmissionForm(mission)}
                                 >
-                                    📤 Submit Work
+                                    📤 {t('submitWork')}
                                 </button>
                             </div>
                         ))}
                     </div>
                 ) : (
                     <div className="section-empty">
-                        <p>No active missions. Visit the Mission Center to pick one up!</p>
+                        <p>{t('noMissionsAvailable')}</p>
                     </div>
                 )}
             </motion.div>
 
             {/* BADGE COLLECTION - FULL GRID */}
             <motion.div className="profile-section" variants={itemVariants}>
-                <h2>🏆 Badge Collection ({user?.badges?.length || 0}/50)</h2>
+                <h2>🏆 {t('badges')} ({user?.badges?.length || 0}/50)</h2>
                 <div className="badge-collection-grid">
                     {badgedata.map(badge => {
                         const isEarned = user?.badges?.includes(badge.id);
@@ -416,13 +421,13 @@ const Profile = ({ userId }) => {
             {/* Settings Section - Only visible in edit mode */}
             {isEditing && (
                 <motion.div className="profile-section settings-section" variants={itemVariants}>
-                    <h2>⚙️ Account Settings</h2>
+                    <h2>⚙️ {t('accountSettings')}</h2>
                     <div className="settings-grid">
                         {/* Information Fields... (Same as before) */}
                         <div className="settings-group">
-                            <h3 className="settings-group-title">👤 Account Information</h3>
+                            <h3 className="settings-group-title">👤 {t('accountInformation')}</h3>
                             <div className="setting-item">
-                                <label>Email Address</label>
+                                <label>{t('emailAddress')}</label>
                                 <input
                                     type="email"
                                     className="input"
@@ -432,7 +437,7 @@ const Profile = ({ userId }) => {
                                 />
                             </div>
                             <div className="setting-item">
-                                <label>Username</label>
+                                <label>{t('username')}</label>
                                 <input
                                     type="text"
                                     className="input"
@@ -444,15 +449,15 @@ const Profile = ({ userId }) => {
                         </div>
 
                         <div className="settings-group">
-                            <h3 className="settings-group-title">💼 Career Information</h3>
+                            <h3 className="settings-group-title">💼 {t('careerInformation')}</h3>
                             <div className="setting-item">
-                                <label>Work Field</label>
+                                <label>{t('workField')}</label>
                                 <select
                                     className="input"
                                     value={editData.workField || ''}
                                     onChange={(e) => setEditData({ ...editData, workField: e.target.value })}
                                 >
-                                    <option value="">Select your field...</option>
+                                    <option value="">{t('selectField')}</option>
                                     <option value="Game UI Designer">Game UI Designer</option>
                                     <option value="Game UX Designer">Game UX Designer</option>
                                     <option value="Game Designer">Game Designer</option>
@@ -468,7 +473,7 @@ const Profile = ({ userId }) => {
 
             {/* Social Links */}
             <motion.div className="profile-section" variants={itemVariants}>
-                <h2>🔗 Social Links</h2>
+                <h2>🔗 {t('socialLinks')}</h2>
                 <div className="social-links-grid">
                     {socialPlatforms.map(platform => {
                         const hasLink = displayData.socialLinks?.[platform.key];
@@ -503,7 +508,7 @@ const Profile = ({ userId }) => {
 
             {/* Completed Missions */}
             <motion.div className="profile-section" variants={itemVariants}>
-                <h2>✅ Completed Missions ({completedMissions.length})</h2>
+                <h2>✅ {t('completedMissions')} ({completedMissions.length})</h2>
                 {completedMissions.length > 0 ? (
                     <div className="missions-grid">
                         {completedMissions.map(mission => (
@@ -517,7 +522,7 @@ const Profile = ({ userId }) => {
                         ))}
                     </div>
                 ) : (
-                    <p className="section-empty">No completed missions yet. Start your first case study!</p>
+                    <p className="section-empty">{t('noMissionsAvailable')}!</p>
                 )}
             </motion.div>
 
@@ -525,9 +530,8 @@ const Profile = ({ userId }) => {
             {showSubmissionForm && currentMissionToSubmit && (
                 <SubmissionForm
                     mission={currentMissionToSubmit}
-                    userId={userId}
-                    onClose={() => setShowSubmissionForm(false)}
-                    onSubmit={handleSubmission}
+                    onCancel={() => setShowSubmissionForm(false)}
+                    onSubmitSuccess={handleSubmission}
                 />
             )}
 

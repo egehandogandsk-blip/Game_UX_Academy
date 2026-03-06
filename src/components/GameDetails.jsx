@@ -1,14 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { dbOperations } from '../database/schema';
+import { useT } from '../contexts/LanguageContext';
 import './GameDetails.css';
 
 const GameDetails = ({ game, onBack, onMissionSelect }) => {
+    const t = useT();
     const [missions, setMissions] = useState([]);
     const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        loadGameMissions();
-    }, [game.id]);
 
     const loadGameMissions = async () => {
         try {
@@ -21,6 +19,10 @@ const GameDetails = ({ game, onBack, onMissionSelect }) => {
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        loadGameMissions();
+    }, [game.id]);
 
     // Platform links mapping
     const platformLinks = {
@@ -42,7 +44,7 @@ const GameDetails = ({ game, onBack, onMissionSelect }) => {
         <div className="game-details-container">
             {/* Back Button */}
             <button className="btn btn-secondary back-btn" onClick={onBack}>
-                ← Back to Game Archive
+                ← {t('backToGames')}
             </button>
 
             {/* Game Header */}
@@ -89,7 +91,7 @@ const GameDetails = ({ game, onBack, onMissionSelect }) => {
 
                     {/* Platform Links */}
                     <div className="platform-links">
-                        <div className="platform-links-label">Available on:</div>
+                        <div className="platform-links-label">{t('availableOn')}</div>
                         <div className="platform-buttons">
                             {game.platform && game.platform.map((platform, index) => (
                                 <a
@@ -110,17 +112,17 @@ const GameDetails = ({ game, onBack, onMissionSelect }) => {
             {/* Missions Section */}
             <div className="game-missions-section">
                 <div className="section-header">
-                    <h2>Available Missions</h2>
-                    <span className="mission-count">{missions.length} missions</span>
+                    <h2>{t('availableMissions')}</h2>
+                    <span className="mission-count">{missions.length} {t('missionsAvailable')}</span>
                 </div>
 
                 {loading ? (
-                    <div className="loading-missions">Loading missions...</div>
+                    <div className="loading-missions">{t('loadingMissions')}</div>
                 ) : missions.length === 0 ? (
                     <div className="no-missions">
                         <div className="no-missions-icon">🎯</div>
-                        <div className="no-missions-text">No missions available yet for this game</div>
-                        <p className="no-missions-hint">Check back later for new case studies!</p>
+                        <div className="no-missions-text">{t('noMissionsAvailable')}</div>
+                        <p className="no-missions-hint">{t('checkBackLater')}</p>
                     </div>
                 ) : (
                     <div className="missions-grid">
@@ -132,7 +134,7 @@ const GameDetails = ({ game, onBack, onMissionSelect }) => {
                             >
                                 <div className="mission-card-header">
                                     <span className={`difficulty-badge ${mission.difficulty}`}>
-                                        {mission.difficulty}
+                                        {t(mission.difficulty)}
                                     </span>
                                     <span className="mission-xp">+{mission.xp} XP</span>
                                 </div>
@@ -154,7 +156,6 @@ const GameDetails = ({ game, onBack, onMissionSelect }) => {
 };
 
 // Helper functions to get game metadata
-// In a real app, this would come from a database
 function getGameDeveloper(title) {
     const developers = {
         'Elden Ring': 'FromSoftware',
@@ -223,7 +224,6 @@ function getGameReleaseYear(title) {
 }
 
 function getGameDescription(title) {
-    // Simple description generator - in real app would come from database
     return `Explore ${title}'s unique UI/UX design challenges through hands-on case studies. Learn from industry-leading design patterns and create your own solutions.`;
 }
 

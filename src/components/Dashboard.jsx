@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { dbOperations } from '../database/schema';
 import { badgedata } from '../data/badges';
-import { designTips } from '../data/designTips'; // Import Tips Data
+import { designTips } from '../data/designTips';
+import { useT } from '../contexts/LanguageContext';
 import './Dashboard.css';
 
 // Import Showcase Images
@@ -11,6 +12,7 @@ import showcaseScifi from '../assets/showcase/scifi.png';
 import showcaseMobile from '../assets/showcase/mobile.png';
 
 const Dashboard = ({ user, onGameBrowse, onMissionSelect }) => {
+    const t = useT();
     const [latestMissions, setLatestMissions] = useState([]);
     const [stats, setStats] = useState({ completedCount: 0 });
     const [loading, setLoading] = useState(true);
@@ -24,12 +26,11 @@ const Dashboard = ({ user, onGameBrowse, onMissionSelect }) => {
 
     // Tip Logic: Auto update every 5 mins
     useEffect(() => {
-        // Initial random tip
         setCurrentTip(designTips[Math.floor(Math.random() * designTips.length)]);
 
         const interval = setInterval(() => {
             handleRefreshTip();
-        }, 5 * 60 * 1000); // 5 minutes
+        }, 5 * 60 * 1000);
 
         return () => clearInterval(interval);
     }, []);
@@ -52,7 +53,6 @@ const Dashboard = ({ user, onGameBrowse, onMissionSelect }) => {
             }
         } catch (error) {
             console.error('News fetch error:', error);
-            // Fallback mock news if fetch fails
             setNewsItems([
                 { title: 'Oyun Sektörü Raporu 2024 Yayınlandı', link: 'https://frpnet.net', pubDate: new Date() },
                 { title: 'Yeni Nesil Konsollar Hakkında Sızıntılar', link: 'https://frpnet.net', pubDate: new Date() }
@@ -73,24 +73,18 @@ const Dashboard = ({ user, onGameBrowse, onMissionSelect }) => {
     useEffect(() => {
         const loadDashboardData = async () => {
             try {
-                // Load missions
                 const allMissions = await dbOperations.getAll('missions');
                 const games = await dbOperations.getAll('games');
 
-                // Get latest missions but try to diversify games
-                // Group missions by game first
                 const lastMissionsByGame = new Map();
-                // Traverse reversed list to find latest for each game
                 [...allMissions].reverse().forEach(mission => {
                     if (!lastMissionsByGame.has(mission.gameId)) {
                         lastMissionsByGame.set(mission.gameId, mission);
                     }
                 });
 
-                // If we have enough unique games, show them. Otherwise fallback to just latest.
                 let displayMissions = Array.from(lastMissionsByGame.values()).slice(0, 4);
 
-                // If we don't have 4 unique games, fill up with other latest missions
                 if (displayMissions.length < 4) {
                     const existingIds = new Set(displayMissions.map(m => m.id));
                     const remainingNeeded = 4 - displayMissions.length;
@@ -98,20 +92,16 @@ const Dashboard = ({ user, onGameBrowse, onMissionSelect }) => {
                     displayMissions = [...displayMissions, ...others];
                 }
 
-                // Attach game info
                 const missionsWithGames = displayMissions.map(mission => ({
                     ...mission,
                     game: games.find(g => g.id === mission.gameId)
                 }));
                 setLatestMissions(missionsWithGames);
 
-                // Load user stats
                 if (user) {
                     const submissions = await dbOperations.getAll('submissions');
                     const userCompleted = submissions.filter(s => s.userId === user.id && s.status === 'completed');
-                    setStats({
-                        completedCount: userCompleted.length
-                    });
+                    setStats({ completedCount: userCompleted.length });
                 }
 
                 setLoading(false);
@@ -124,18 +114,15 @@ const Dashboard = ({ user, onGameBrowse, onMissionSelect }) => {
         loadDashboardData();
     }, [user]);
 
-    // DEMO: Unlock first 5 badges if user has none (or for testing)
     useEffect(() => {
         if (user && (!user.badges || user.badges.length < 5)) {
             const unlockDemoBadges = async () => {
                 const demoBadges = badgedata.slice(0, 5).map(b => b.id);
-                // Merge with existing badges to avoid duplicates
                 const currentBadges = user.badges || [];
                 const newBadges = [...new Set([...currentBadges, ...demoBadges])];
 
                 if (newBadges.length !== currentBadges.length) {
                     await dbOperations.update('users', user.id, { ...user, badges: newBadges });
-                    // Force reload/update (in a real app, we'd use a context/global state update)
                     window.location.reload();
                 }
             };
@@ -152,7 +139,7 @@ const Dashboard = ({ user, onGameBrowse, onMissionSelect }) => {
             tags: ["4 Ay", "72+ Saat", "Bireysel"],
             type: "INDUSTRY PASS",
             level: "LEVEL 3",
-            image: "linear-gradient(135deg, #1a1a1a 0%, #2d3436 100%)" // Placeholder for image
+            image: "linear-gradient(135deg, #1a1a1a 0%, #2d3436 100%)"
         },
         {
             id: 2,
@@ -186,7 +173,6 @@ const Dashboard = ({ user, onGameBrowse, onMissionSelect }) => {
         }
     ];
 
-    // Mock Community Data Generator
     const communityShowcase = React.useMemo(() => {
         const showcaseImages = [showcaseCyberpunk, showcaseFantasy, showcaseScifi, showcaseMobile];
         return Array(16).fill(null).map((_, i) => ({
@@ -199,7 +185,7 @@ const Dashboard = ({ user, onGameBrowse, onMissionSelect }) => {
         }));
     }, []);
 
-    if (loading) return <div className="dashboard-loading">Loading Dashboard...</div>;
+    if (loading) return <div className="dashboard-loading">{t('loadingDashboard')}</div>;
 
     return (
         <div className="dashboard-container">
@@ -207,8 +193,8 @@ const Dashboard = ({ user, onGameBrowse, onMissionSelect }) => {
             <section className="dashboard-header animate-fade-in">
                 <div className="dashboard-top-bar">
                     <div className="header-greeting">
-                        <h1>Welcome back, {user?.username}! 👋</h1>
-                        <p className="subtitle animate-fade-in animate-stagger-1">Ready to create some amazing game interfaces today?</p>
+                        <h1>{t('welcomeBack')}, {user?.username}! 👋</h1>
+                        <p className="subtitle animate-fade-in animate-stagger-1">{t('readyToCreate')}</p>
                     </div>
 
                     <div className="header-actions">
@@ -216,7 +202,6 @@ const Dashboard = ({ user, onGameBrowse, onMissionSelect }) => {
                         <a href="https://www.gameuxacademy.com" target="_blank" rel="noopener noreferrer" className="live-ticker-panel">
                             <div className="ticker-content">
                                 <div className="ticker-track">
-                                    {/* Duplicated items for seamless scroll */}
                                     {[...educationCourses, ...educationCourses].map((course, idx) => (
                                         <div key={`ticker-${idx}`} className="ticker-item">
                                             <span className="live-indicator">
@@ -241,36 +226,34 @@ const Dashboard = ({ user, onGameBrowse, onMissionSelect }) => {
                     <div className="stat-pill glass animate-scale-in animate-stagger-1">
                         <div className="stat-info">
                             <span className="stat-value">{user?.xp || 0}</span>
-                            <span className="stat-label">Total XP</span>
+                            <span className="stat-label">{t('totalXP')}</span>
                         </div>
                     </div>
                     <div className="stat-pill glass animate-scale-in animate-stagger-2">
                         <div className="stat-info">
                             <span className="stat-value">{user?.level || 1}</span>
-                            <span className="stat-label">Level</span>
+                            <span className="stat-label">{t('level')}</span>
                         </div>
                     </div>
                     <div className="stat-pill glass animate-scale-in animate-stagger-3">
                         <div className="stat-info">
                             <span className="stat-value">{user?.badges?.length || 0}</span>
-                            <span className="stat-label">Badges</span>
+                            <span className="stat-label">{t('badges')}</span>
                         </div>
                     </div>
                     <div className="stat-pill glass animate-scale-in animate-stagger-4">
                         <div className="stat-info">
                             <span className="stat-value">{stats.completedCount}</span>
-                            <span className="stat-label">Missions</span>
+                            <span className="stat-label">{t('missions_label')}</span>
                         </div>
                     </div>
                     <div className="stat-pill glass animate-scale-in animate-stagger-1">
                         <div className="stat-info">
                             <span className="stat-value">{user?.certificates?.length || 0}</span>
-                            <span className="stat-label">Sertifikalar</span>
+                            <span className="stat-label">{t('certificates')}</span>
                         </div>
                     </div>
                 </div>
-
-
             </section>
 
             <div className="dashboard-grid">
@@ -279,8 +262,8 @@ const Dashboard = ({ user, onGameBrowse, onMissionSelect }) => {
                     {/* Active Missions */}
                     <section className="dashboard-section">
                         <div className="section-header">
-                            <h3>🔥 New Missions</h3>
-                            <button className="btn-view-all" onClick={onGameBrowse}>View All</button>
+                            <h3>{t('newMissions')}</h3>
+                            <button className="btn-view-all" onClick={onGameBrowse}>{t('viewAll')}</button>
                         </div>
                         <div className="latest-missions-grid">
                             {latestMissions.map((mission, idx) => (
@@ -310,19 +293,15 @@ const Dashboard = ({ user, onGameBrowse, onMissionSelect }) => {
                         </div>
                     </section>
 
-                    {/* =================================================================
-                            NEW MODULES: DESIGN TIPS & NEWS
-                           ================================================================= */}
                     <section className="dashboard-updates-grid">
-
                         {/* 1. Design Tips Module */}
                         <div className="update-card tip-card">
                             <div className="update-header">
                                 <div className="update-title">
                                     <span className="icon">💡</span>
-                                    <h4>Günün Tasarım İpuçları</h4>
+                                    <h4>{t('designTip')}</h4>
                                 </div>
-                                <button className="btn-icon-refresh" onClick={handleRefreshTip} title="Yeni İpucu">
+                                <button className="btn-icon-refresh" onClick={handleRefreshTip} title={t('refreshTip')}>
                                     ↻
                                 </button>
                             </div>
@@ -330,7 +309,7 @@ const Dashboard = ({ user, onGameBrowse, onMissionSelect }) => {
                                 <p>"{currentTip}"</p>
                             </div>
                             <div className="update-footer">
-                                <span className="update-timer">Her 5 dakikada bir güncellenir</span>
+                                <span className="update-timer">{t('updatesEvery5min')}</span>
                             </div>
                         </div>
 
@@ -339,9 +318,9 @@ const Dashboard = ({ user, onGameBrowse, onMissionSelect }) => {
                             <div className="update-header">
                                 <div className="update-title">
                                     <span className="icon">📰</span>
-                                    <h4>Oyun Haberleri (FRPNET)</h4>
+                                    <h4>{t('gameNews')}</h4>
                                 </div>
-                                <button className="btn-icon-refresh" onClick={handleRefreshNews} disabled={newsLoading} title="Yenile">
+                                <button className="btn-icon-refresh" onClick={handleRefreshNews} disabled={newsLoading} title={t('refresh')}>
                                     {newsLoading ? '...' : '↻'}
                                 </button>
                             </div>
@@ -352,25 +331,23 @@ const Dashboard = ({ user, onGameBrowse, onMissionSelect }) => {
                                             <div className="news-icon">🎮</div>
                                             <div className="news-info">
                                                 <span className="news-title">{news.title}</span>
-                                                <span className="news-date">{new Date(news.pubDate).toLocaleDateString('tr-TR')}</span>
+                                                <span className="news-date">{new Date(news.pubDate).toLocaleDateString()}</span>
                                             </div>
                                         </a>
                                     ))
                                 ) : (
-                                    <div className="news-empty">Haberler yükleniyor veya bulunamadı...</div>
+                                    <div className="news-empty">{t('newsLoading')}</div>
                                 )}
                             </div>
                             <div className="update-footer">
-                                <a href="https://frpnet.net/" target="_blank" rel="noopener noreferrer" className="source-link">Kaynak: FRPNET</a>
+                                <a href="https://frpnet.net/" target="_blank" rel="noopener noreferrer" className="source-link">{t('newsSource')}</a>
                             </div>
                         </div>
-
                     </section>
-                    {/* ================================================================= */}
 
                     {/* Education / Courses */}
                     <section className="dashboard-section animate-fade-in animate-stagger-2">
-                        <h3>🎓 GDA Academi Eğitimleri</h3>
+                        <h3>{t('gdaAcademy')}</h3>
                         <div className="education-grid">
                             {educationCourses.map((course, idx) => (
                                 <div key={course.id} className={`course-card glass-hover animate-fade-in animate-stagger-${(idx % 4) + 1}`}>
@@ -391,8 +368,8 @@ const Dashboard = ({ user, onGameBrowse, onMissionSelect }) => {
                                             ))}
                                         </div>
                                         <div className="course-footer">
-                                            <div className="live-badge">📺 Canlı Ders</div>
-                                            <button className="btn-course-action">Hemen Kayıt Ol</button>
+                                            <div className="live-badge">{t('liveLecture')}</div>
+                                            <button className="btn-course-action">{t('registerNow')}</button>
                                         </div>
                                     </div>
                                 </div>
@@ -402,7 +379,7 @@ const Dashboard = ({ user, onGameBrowse, onMissionSelect }) => {
 
                     {/* Community Showcase - Horizontal Scroll */}
                     <section className="dashboard-section">
-                        <h3>🌟 Community Showcase</h3>
+                        <h3>{t('communityShowcase')}</h3>
                         <div className="showcase-scroll-container">
                             <div className="showcase-track">
                                 {communityShowcase.map((item) => (
@@ -424,7 +401,7 @@ const Dashboard = ({ user, onGameBrowse, onMissionSelect }) => {
                                 ))}
                                 <div className="showcase-more-card">
                                     <div className="showcase-more-circle">→</div>
-                                    <span>Daha Fazla Gör</span>
+                                    <span>{t('seeMore')}</span>
                                 </div>
                             </div>
                         </div>

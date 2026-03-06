@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import AddProjectModal from './AddProjectModal'; // We can reuse or adapt this if needed
+import AddProjectModal from './AddProjectModal';
+import { useT } from '../../contexts/LanguageContext';
 import '../Community.css';
 
 const FileLibrary = () => {
+    const t = useT();
     const [isModalOpen, setIsModalOpen] = useState(false);
 
     // Dummy Data for Files
@@ -50,11 +52,10 @@ const FileLibrary = () => {
     ]);
 
     const handleAddFile = (newFile) => {
-        // Adapt the project object to file object
         const fileObj = {
             id: Date.now(),
             name: newFile.title,
-            type: 'ZIP', // Defaulting for demo
+            type: 'ZIP',
             size: 'Unknown',
             author: newFile.author || 'You',
             downloads: 0,
@@ -67,23 +68,23 @@ const FileLibrary = () => {
     return (
         <div className="community-gallery">
             <div className="gallery-header">
-                <h3>Design Resources & Files</h3>
+                <h3>{t('designResourcesFiles')}</h3>
                 <button
                     className="btn-add-project"
                     onClick={() => setIsModalOpen(true)}
                 >
-                    + Upload New File
+                    + {t('uploadNewFile')}
                 </button>
             </div>
 
             <div className="file-library-list">
                 <div className="file-list-header">
-                    <span className="col-icon">Type</span>
-                    <span className="col-name">File Name</span>
-                    <span className="col-meta">Size</span>
-                    <span className="col-meta">Author</span>
-                    <span className="col-meta">Downloads</span>
-                    <span className="col-action">Action</span>
+                    <span className="col-icon">{t('type')}</span>
+                    <span className="col-name">{t('fileName')}</span>
+                    <span className="col-meta">{t('size')}</span>
+                    <span className="col-meta">{t('author')}</span>
+                    <span className="col-meta">{t('downloads')}</span>
+                    <span className="col-action">{t('action')}</span>
                 </div>
 
                 {files.map((file) => (
@@ -101,13 +102,12 @@ const FileLibrary = () => {
                         <div className="col-meta">{file.author}</div>
                         <div className="col-meta">{file.downloads}</div>
                         <div className="col-action">
-                            <button className="btn-download">Download</button>
+                            <button className="btn-download">{t('download')}</button>
                         </div>
                     </div>
                 ))}
             </div>
 
-            {/* Reusing AddProjectModal for now, treating 'Project Title' as 'File Name' */}
             <AddProjectModal
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}

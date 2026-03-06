@@ -1,14 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bot, X, Send, MessageSquare } from 'lucide-react';
+import { useT } from '../contexts/LanguageContext';
 import './AIAssistant.css';
 
-const AIAssistant = ({ onEvent }) => {
+const AIAssistant = () => {
+    const t = useT();
     const [isOpen, setIsOpen] = useState(false);
     const [messages, setMessages] = useState([
         {
             type: 'ai',
-            text: 'Merhaba! 👋 Ben senin kişisel GDA rehberin. Oyun tasarımı yolculuğunda sana yardımcı olmak için buradayım!\n\nKendini hangi alanda geliştirmek istersin?',
+            text: t('aiWelcome'),
             timestamp: new Date()
         }
     ]);
@@ -18,55 +20,42 @@ const AIAssistant = ({ onEvent }) => {
     const [userContext, setUserContext] = useState({});
     const chatEndRef = useRef(null);
 
-    // Course packages with detailed info
+    // Course packages with detailed info - Now using translation keys
     const courses = {
         gameDesign: {
-            name: 'Game Design Sertifikalı Eğitim',
+            name: t('courseGameDesign'),
             price: '34.000 TL',
-            duration: '6 ay',
+            duration: '6 ' + (t('perMonth').includes('month') ? 'months' : 'ay'),
             topics: ['game design', 'oyun tasarım', 'tasarım', 'mekanik', 'sistem'],
             benefits: ['Sertifika', 'Mentörlük', 'Portfolio desteği', 'İş garantisi']
         },
         uiUx: {
-            name: 'Game UI/UX Mastery',
+            name: t('courseUIUX'),
             price: '28.000 TL',
-            duration: '4 ay',
+            duration: '4 ' + (t('perMonth').includes('month') ? 'months' : 'ay'),
             topics: ['ui', 'ux', 'interface', 'arayüz', 'user experience'],
             benefits: ['Gerçek proje deneyimi', 'Portfolio', 'Sektör rehberliği']
         },
         caseStudy: {
-            name: 'Advanced Case Study Workshop',
+            name: t('courseCaseStudy'),
             price: '15.000 TL',
-            duration: '2 ay',
+            duration: '2 ' + (t('perMonth').includes('month') ? 'months' : 'ay'),
             topics: ['case', 'case study', 'analiz', 'portfolio', 'inceleme'],
             benefits: ['Hızlı başlangıç', 'Portfolio güçlendirme', 'Pratik odaklı']
         },
         mobile: {
-            name: 'Mobile Game UI Bootcamp',
+            name: t('courseMobile'),
             price: '22.000 TL',
-            duration: '3 ay',
+            duration: '3 ' + (t('perMonth').includes('month') ? 'months' : 'ay'),
             topics: ['mobile', 'mobil', 'ios', 'android', 'touch'],
             benefits: ['Mobil uzmanlaşma', 'Trend bilgisi', 'Publish desteği']
         }
-    };
-
-    // Proactive suggestions
-    const suggestions = {
-        afterCaseCompletion: 'Tebrikler! Case study\'ni harika tamamladın! 🎉\n\nBu başarını daha da ileriye taşımak ister misin? Seninle potansiyelini konuşalım!',
-        afterFiltering: 'Projelere göz atıyorsun galiba! 🔍\n\nBu alanda uzmanlaşmak için bir yol haritası oluşturmama yardımcı olayım mı?',
-        lowScore: 'AI feedback\'ine baktım. Gelişim için harika fırsatlar var! 😊\n\nBir kahve sohbeti yapar gibi konuşalım, sana nasıl yardımcı olabilirim?'
     };
 
     // Auto-scroll
     useEffect(() => {
         chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
-
-    useEffect(() => {
-        if (onEvent) {
-            console.log('AI Assistant ready');
-        }
-    }, [onEvent]);
 
     const sendMessage = () => {
         if (!inputValue.trim()) return;
@@ -105,17 +94,17 @@ const AIAssistant = ({ onEvent }) => {
         // Step 0: Initial interest detection
         if (step === 0) {
             // Detect area of interest
-            if (input.includes('ui') || input.includes('ux') || input.includes('arayüz')) {
+            if (input.includes('ui') || input.includes('ux') || input.includes('arayüz') || input.includes('interface')) {
                 return {
-                    text: 'Harika seçim! UI/UX tasarımı gerçekten önemli bir alan. 🎨\n\nŞu anda hangi seviyedesin?\n\n• Yeni başlıyorum\n• Biraz deneyimim var\n• Profesyonelleşmek istiyorum',
+                    text: t('aiSelectionUI'),
                     nextStep: 1,
                     context: { interest: 'uiUx' }
                 };
             }
 
-            if (input.includes('game design') || input.includes('oyun tasarım') || input.includes('mekanik')) {
+            if (input.includes('game design') || input.includes('oyun tasarım') || input.includes('mekanik') || input.includes('mechanic')) {
                 return {
-                    text: 'Müthiş! Game Design oyun sektörünün kalbi. 🎮\n\nDaha çok hangi yönüyle ilgileniyorsun?\n\n• Genel game design\n• Sistem tasarımı\n• Level design',
+                    text: t('aiSelectionGD'),
                     nextStep: 1,
                     context: { interest: 'gameDesign' }
                 };
@@ -123,7 +112,7 @@ const AIAssistant = ({ onEvent }) => {
 
             if (input.includes('mobil') || input.includes('mobile')) {
                 return {
-                    text: 'Mobil oyunlar büyük bir pazar! 📱\n\nMobil oyun tasarımında neyi hedefliyorsun?\n\n• Casual oyunlar\n• Hyper-casual\n• Kompleks mobil oyunlar',
+                    text: t('aiSelectionMobile'),
                     nextStep: 1,
                     context: { interest: 'mobile' }
                 };
@@ -131,7 +120,7 @@ const AIAssistant = ({ onEvent }) => {
 
             if (input.includes('portfolio') || input.includes('case')) {
                 return {
-                    text: 'Portfolio güçlendirme çok akıllıca! 💼\n\nŞu an portfolyonda kaç proje var?\n\n• Hiç yok\n• 1-2 proje\n• 3+ proje var',
+                    text: t('aiSelectionPortfolio'),
                     nextStep: 1,
                     context: { interest: 'caseStudy' }
                 };
@@ -139,7 +128,7 @@ const AIAssistant = ({ onEvent }) => {
 
             // General response
             return {
-                text: 'Anlıyorum! 😊 Biraz daha detaylandıralım.\n\nŞu alanlardan hangisi daha çok ilgini çekiyor?\n\n• UI/UX Tasarım\n• Game Design\n• Mobil Oyun Tasarımı\n• Portfolio/Case Study',
+                text: t('aiGeneralDetail'),
                 nextStep: 0
             };
         }
@@ -148,14 +137,14 @@ const AIAssistant = ({ onEvent }) => {
         if (step === 1) {
             let experienceLevel = 'beginner';
 
-            if (input.includes('profesyonel') || input.includes('uzman') || input.includes('ileri')) {
+            if (input.includes('profesyonel') || input.includes('uzman') || input.includes('ileri') || input.includes('professional') || input.includes('expert') || input.includes('advanced')) {
                 experienceLevel = 'advanced';
-            } else if (input.includes('deneyim') || input.includes('orta') || input.includes('biraz')) {
+            } else if (input.includes('deneyim') || input.includes('orta') || input.includes('biraz') || input.includes('experience') || input.includes('intermediate') || input.includes('some')) {
                 experienceLevel = 'intermediate';
             }
 
             return {
-                text: 'Süper, şimdi daha net görüyorum! 👍\n\nSon bir soru: Bu eğitimden beklentin ne?\n\n• Kariyere başlamak\n• Mevcut işimi geliştirmek\n• Freelance olarak çalışmak\n• Hobby/Kişisel gelişim',
+                text: t('aiStep1Response'),
                 nextStep: 2,
                 context: { level: experienceLevel }
             };
@@ -166,61 +155,51 @@ const AIAssistant = ({ onEvent }) => {
             const interest = userContext.interest || 'gameDesign';
             const course = courses[interest];
 
-            let goalText = 'hedeflerine ulaşmak';
-            if (input.includes('kariyer') || input.includes('iş')) {
-                goalText = 'kariyerini başlatmak';
-            } else if (input.includes('geliştir')) {
-                goalText = 'mevcut becerilerini geliştirmek';
+            let goalText = t('home').toLowerCase(); // Placeholder for 'goals' until better key
+            if (input.includes('kariyer') || input.includes('iş') || input.includes('career') || input.includes('job')) {
+                goalText = 'career';
+            } else if (input.includes('geliştir') || input.includes('improve')) {
+                goalText = 'skills';
             } else if (input.includes('freelance')) {
-                goalText = 'freelance kariyerine başlamak';
+                goalText = 'freelance';
             }
 
             const benefitsList = course.benefits.map(b => `• ${b}`).join('\n');
 
             return {
-                text: `Mükemmel! Senin için tam paket buldum! 🎯\n\n📚 **${course.name}**\n\n💰 Yatırım: ${course.price}\n⏱️ Süre: ${course.duration}\n\n✨ Sana özel avantajlar:\n${benefitsList}\n\nBu eğitim ${goalText} için ideal! Seviyene göre özelleştirilmiş bir program sunuyoruz.\n\n📧 Hemen başvurmak için: **info@gameuxacademy.com**\n\nDetaylı görüşme için mail atabilirsin! Ben buradayım. 💪`,
+                text: `${t('aiFinalRecommendation')}\n\n📚 **${course.name}**\n\n💰 ${t('aiInvestment')}: ${course.price}\n⏱️ ${t('aiDuration')}: ${course.duration}\n\n✨ ${t('aiBenefits')}:\n${benefitsList}\n\n${t('aiIdealFor').replace('{goal}', goalText)}\n\n📧 ${t('aiApplyNow')}: **info@gameuxacademy.com**\n\n${t('aiThanks')} 💪`,
                 nextStep: 3,
                 context: { recommended: course.name }
             };
         }
 
         // Step 3+: Post-recommendation chat
-        if (input.includes('fiyat') || input.includes('ücret') || input.includes('taksit')) {
+        if (input.includes('fiyat') || input.includes('ücret') || input.includes('taksit') || input.includes('price') || input.includes('cost') || input.includes('payment')) {
             return {
-                text: 'Ödeme konusunda esneklik sağlıyoruz! 💳\n\n• Peşin ödeme indirimleri\n• 6 aya kadar taksit\n• Özel kampanyalar\n\nDetaylar için info@gameuxacademy.com adresine "Ödeme Seçenekleri" başlığıyla mail at!\n\nBaşka sorun var mı? 😊',
+                text: t('aiPaymentInfo') + '\n\n📧 info@gameuxacademy.com\n\n' + t('aiAnythingElse'),
                 nextStep: 3
             };
         }
 
-        if (input.includes('tarih') || input.includes('ne zaman') || input.includes('başla')) {
+        if (input.includes('tarih') || input.includes('ne zaman') || input.includes('başla') || input.includes('date') || input.includes('when') || input.includes('start')) {
             return {
-                text: 'Eğitimlerimiz her ay yeni dönemle başlıyor! 📅\n\nEn yakın dönem için:\n📧 info@gameuxacademy.com\n\nBaşvurunu yap, seni hemen arıyorlar! ⚡',
+                text: t('aiDateInfo') + '\n\n📧 info@gameuxacademy.com\n\n' + t('aiAnythingElse'),
                 nextStep: 3
             };
         }
 
         // Friendly conversational responses
-        if (input.includes('teşekkür') || input.includes('sağol')) {
+        if (input.includes('teşekkür') || input.includes('sağol') || input.includes('thanks') || input.includes('thank you')) {
             return {
-                text: 'Rica ederim! 🤗 Ne zaman istersen buradayım.\n\nBaşvurunu yapmayı unutma: info@gameuxacademy.com\n\nBaşarılar dilerim! 🚀',
+                text: t('aiThanks') + '\n\n📧 info@gameuxacademy.com\n\n' + t('aiAnythingElse'),
                 nextStep: 3
             };
         }
 
         return {
-            text: 'Başka merak ettiğin bir şey var mı? 😊\n\nBaşvuru için: **info@gameuxacademy.com**\n\nBuradayım! 💬',
+            text: t('aiAnythingElse') + '\n\n📧 **info@gameuxacademy.com**',
             nextStep: 3
         };
-    };
-
-    const triggerProactiveMessage = (type) => {
-        setHasNotification(true);
-        const message = {
-            type: 'ai',
-            text: suggestions[type] || suggestions.afterCaseCompletion,
-            timestamp: new Date()
-        };
-        setMessages(prev => [...prev, message]);
     };
 
     // Expose trigger function to parent
@@ -232,7 +211,7 @@ const AIAssistant = ({ onEvent }) => {
             if (event === 'submission_processing') {
                 const msg = {
                     type: 'ai',
-                    text: 'Tasarımını aldım! 🖌️\n\nŞu an GDA AI motoru üzerinde analiz yapıyorum:\n• Isı haritası oluşturuluyor...\n• Odak noktaları taranıyor...\n• Renk uyumu kontrol ediliyor...\n\nBirazdan döneceğim! ⏳',
+                    text: t('aiAnalysisProcessing'),
                     timestamp: new Date()
                 };
                 setMessages(prev => [...prev, msg]);
@@ -241,10 +220,10 @@ const AIAssistant = ({ onEvent }) => {
             if (event === 'analysis_ready') {
                 const msg = {
                     type: 'ai',
-                    text: `Analiz Tamamlandı! 🎉\n\nSkorun: ${data.score}/10\n\nDetaylı raporun ve ısı haritan hazır. Görmek istersen aşağıya tıkla! 👇`,
+                    text: t('aiAnalysisReady').replace('{score}', data.score),
                     timestamp: new Date(),
                     isAction: true,
-                    actionText: '📊 Raporu Görüntüle',
+                    actionText: t('viewReport'),
                     onAction: data.onClick
                 };
                 setMessages(prev => [...prev, msg]);
@@ -255,8 +234,7 @@ const AIAssistant = ({ onEvent }) => {
         return () => {
             delete window.triggerAIAssistant;
         };
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [t]);
 
     const handleKeyPress = (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
@@ -271,10 +249,10 @@ const AIAssistant = ({ onEvent }) => {
     };
 
     const quickActions = [
-        'UI/UX eğitimi',
-        'Game Design eğitimi',
-        'Fiyat bilgisi',
-        'Portfolio geliştirme'
+        t('courseUIUX'),
+        t('courseGameDesign'),
+        t('aiInvestment'),
+        t('courseCaseStudy')
     ];
 
     return (
@@ -304,9 +282,9 @@ const AIAssistant = ({ onEvent }) => {
                             <div className="ai-header-info">
                                 <span className="ai-avatar"><Bot size={20} /></span>
                                 <div>
-                                    <h3>GDA AI Asistan</h3>
+                                    <h3>{t('aiAssistant')}</h3>
                                     <p className="ai-status">
-                                        <span className="status-dot"></span> Online
+                                        <span className="status-dot"></span> {t('online')}
                                     </p>
                                 </div>
                             </div>
@@ -345,7 +323,7 @@ const AIAssistant = ({ onEvent }) => {
                                             </button>
                                         )}
                                         <span className="message-time">
-                                            {msg.timestamp.toLocaleTimeString('tr-TR', {
+                                            {msg.timestamp.toLocaleTimeString(undefined, {
                                                 hour: '2-digit',
                                                 minute: '2-digit'
                                             })}
@@ -359,7 +337,7 @@ const AIAssistant = ({ onEvent }) => {
                         {/* Quick Actions */}
                         {messages.length === 1 && (
                             <div className="quick-actions">
-                                <p className="quick-label">Hızlı Seçenekler:</p>
+                                <p className="quick-label">{t('quickOptions')}:</p>
                                 {quickActions.map((action, idx) => (
                                     <button
                                         key={idx}
@@ -379,7 +357,7 @@ const AIAssistant = ({ onEvent }) => {
                         <div className="ai-chat-input">
                             <input
                                 type="text"
-                                placeholder="Mesajını yaz..."
+                                placeholder={t('typeMessage')}
                                 value={inputValue}
                                 onChange={(e) => setInputValue(e.target.value)}
                                 onKeyPress={handleKeyPress}

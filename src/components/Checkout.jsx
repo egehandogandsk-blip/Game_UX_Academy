@@ -1,12 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useStripe, useElements, CardNumberElement, CardExpiryElement, CardCvcElement, PaymentRequestButtonElement } from '@stripe/react-stripe-js';
 import { dbOperations } from '../database/schema';
-import { PaymentService } from '../services/PaymentService';
+import { StripeService } from '../services/StripeService';
 import './Checkout.css';
 
 const Checkout = ({ plan, user, refreshUser, onBack, onComplete }) => {
+    const stripe = useStripe();
+    const elements = useElements();
+
     const [step, setStep] = useState(1); // 1: Billing, 2: Payment, 3: Success, 4: Error
     const [loading, setLoading] = useState(false);
-    const [show3DSecure, setShow3DSecure] = useState(false);
+    const [paymentMethod, setPaymentMethod] = useState('card'); // 'card', 'link', 'express'
+
+    // Express Payment (Apple/Google Pay)
+    const [paymentRequest, setPaymentRequest] = useState(null);
 
     // Billing Info
     const [billingType, setBillingType] = useState('individual');
@@ -21,18 +28,56 @@ const Checkout = ({ plan, user, refreshUser, onBack, onComplete }) => {
         taxId: ''
     });
 
-    // Payment Info
-    const [cardData, setCardData] = useState({
-        number: '',
-        holderName: '',
-        expiry: '',
-        cvc: ''
+    // Link Payment Demo Info
+    const [linkInfo, setLinkInfo] = useState({
+        firstName: user?.firstName || '',
+        lastName: user?.lastName || '',
+        email: user?.email || '',
+        phone: '',
+        address: ''
+    });
+
+    // Card state for visual display only
+    const [cardVisual, setCardVisual] = useState({
+        number: '•••• •••• •••• ••••',
+        holderName: user?.username || 'FULL NAME',
+        expiry: 'MM/YY',
+        cvc: '•••'
     });
     const [cardType, setCardType] = useState('Unknown');
     const [isFlipped, setIsFlipped] = useState(false);
 
     // Validation Errors
     const [errors, setErrors] = useState({});
+
+    // Stripe Payment Request Effect
+    useEffect(() => {
+        if (stripe && plan) {
+            const pr = stripe.paymentRequest({
+                country: 'US',
+                currency: 'usd',
+                total: {
+                    label: `${plan.name} Plan`,
+                    amount: Math.round(parseFloat(plan.price.replace('$', '')) * 100),
+                },
+                requestPayerName: true,
+                requestPayerEmail: true,
+            });
+
+            pr.canMakePayment().then(result => {
+                if (result) {
+                    setPaymentRequest(pr);
+                }
+            });
+
+            pr.on('paymentmethod', async (ev) => {
+                // Confirm the PaymentIntent on the backend if needed
+                // For demo, we just succeed
+                ev.complete('success');
+                handleSuccess(ev.paymentMethod.id);
+            });
+        }
+    }, [stripe, plan, handleSuccess]);
 
     // Scroll to top
     useEffect(() => {
@@ -44,41 +89,27 @@ const Checkout = ({ plan, user, refreshUser, onBack, onComplete }) => {
         const { name, value } = e.target;
         setBillingInfo(prev => ({ ...prev, [name]: value }));
         if (errors[name]) setErrors(prev => ({ ...prev, [name]: null }));
+
+        if (name === 'firstName' || name === 'lastName') {
+            setCardVisual(prev => ({ ...prev, holderName: `${billingInfo.firstName} ${billingInfo.lastName}`.toUpperCase() }));
+        }
     };
 
-    // Handle Card Inputs
-    const handleCardChange = (e) => {
+    const handleLinkChange = (e) => {
         const { name, value } = e.target;
-        let formattedValue = value;
-
-        if (name === 'number') {
-            formattedValue = PaymentService.formatCardNumber(value);
-            setCardType(PaymentService.getCardType(value));
-        } else if (name === 'expiry') {
-            formattedValue = PaymentService.formatExpiry(value);
-        } else if (name === 'cvc') {
-            formattedValue = value.replace(/\D/g, '').slice(0, 4);
-        }
-
-        setCardData(prev => ({ ...prev, [name]: formattedValue }));
-
-        // Validation on change
-        if (name === 'number') {
-            const isValid = PaymentService.isValidLuhn(value);
-            setErrors(prev => ({
-                ...prev,
-                number: isValid || value.length < 14 ? null : 'Invalid Card Number'
-            }));
-        } else {
-            if (errors[name]) setErrors(prev => ({ ...prev, [name]: null }));
-        }
+        setLinkInfo(prev => ({ ...prev, [name]: value }));
+        if (errors[name]) setErrors(prev => ({ ...prev, [name]: null }));
     };
 
-    const handleFocus = (e) => {
-        if (e.target.name === 'cvc') {
-            setIsFlipped(true);
+    const handleStripeChange = (event, field) => {
+        if (event.error) {
+            setErrors(prev => ({ ...prev, [field]: event.error.message }));
         } else {
-            setIsFlipped(false);
+            setErrors(prev => ({ ...prev, [field]: null }));
+        }
+
+        if (field === 'number' && event.brand) {
+            setCardType(event.brand.charAt(0).toUpperCase() + event.brand.slice(1));
         }
     };
 
@@ -96,15 +127,13 @@ const Checkout = ({ plan, user, refreshUser, onBack, onComplete }) => {
         return Object.keys(newErrors).length === 0;
     };
 
-    const validatePayment = () => {
+    const validateLinkInfo = () => {
         const newErrors = {};
-        if (!cardData.holderName) newErrors.holderName = 'Card Holder Name is required';
-        if (cardData.number.length < 15 || !PaymentService.isValidLuhn(cardData.number)) {
-            newErrors.number = 'Invalid Card Number';
-        }
-        if (cardData.expiry.length !== 5) newErrors.expiry = 'Invalid Date (MM/YY)';
-        if (cardData.cvc.length < 3) newErrors.cvc = 'Invalid CVC';
-
+        if (!linkInfo.firstName) newErrors.firstName = 'First Name is required';
+        if (!linkInfo.lastName) newErrors.lastName = 'Last Name is required';
+        if (!linkInfo.email) newErrors.email = 'Email is required';
+        if (!linkInfo.phone) newErrors.phone = 'Phone is required';
+        if (!linkInfo.address) newErrors.address = 'Address is required';
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
@@ -113,52 +142,83 @@ const Checkout = ({ plan, user, refreshUser, onBack, onComplete }) => {
         if (validateBilling()) setStep(2);
     };
 
-    const handlePaymentSubmit = async () => {
-        if (!validatePayment()) return;
+    const handleSuccess = useCallback(async (trxId = 'TEST_TRX') => {
+        if (user) {
+            await dbOperations.update('users', user.id, {
+                ...user,
+                subscriptionTier: plan.name,
+                planId: plan.id,
+                subscriptionStatus: 'active'
+            });
 
+            await dbOperations.add('subscriptions', {
+                userId: user.id,
+                plan: plan.name,
+                date: new Date().toISOString(),
+                amount: plan.price,
+                transactionId: trxId
+            });
+
+            if (refreshUser) await refreshUser();
+        }
+
+        setStep(3); // Success Screen
+        setTimeout(() => onComplete(), 5000);
+    }, [user, plan, refreshUser, onComplete]);
+
+    const handleCardPayment = useCallback(async () => {
+        if (!stripe || !elements) return;
         setLoading(true);
+        setErrors({});
 
-        // Simulate 3D Secure
+        try {
+            const result = await StripeService.confirmPayment(stripe, elements, billingInfo);
+            if (result.error) {
+                setErrors({ stripe: result.error.message });
+                setLoading(false);
+                return;
+            }
+            handleSuccess(result.paymentMethod?.id);
+        } catch (error) {
+            console.error('Payment Error', error);
+            setStep(4);
+        } finally {
+            setLoading(false);
+        }
+    }, [stripe, elements, billingInfo, handleSuccess]);
+
+    const handleLinkSubmit = async () => {
+        if (!validateLinkInfo()) return;
+        setLoading(true);
+        // Simulate demo "Send" action
         setTimeout(() => {
-            setShow3DSecure(true);
-
-            // Auto finish 3D Secure after 3s
-            setTimeout(async () => {
-                setShow3DSecure(false);
-
-                try {
-                    // Call Fake Payment Service
-                    await PaymentService.processPayment({
-                        ...cardData,
-                        amount: plan.price
-                    });
-
-                    // Success
-                    if (user) {
-                        await dbOperations.update('users', user.id, {
-                            ...user,
-                            subscriptionTier: plan.name
-                        });
-                        if (refreshUser) await refreshUser();
-                    }
-
-                    setStep(3); // Success Screen
-                    setTimeout(() => onComplete(), 4000);
-
-                } catch (error) {
-                    console.error('Payment Error', error);
-                    setStep(4); // Error Screen
-                } finally {
-                    setLoading(false);
-                }
-            }, 3000);
-        }, 1500);
+            console.log('Link Payment Info Submitted (Demo):', linkInfo);
+            handleSuccess('LINK_DEMO_TRX');
+        }, 2000);
     };
 
-    if (!plan) return <div>No plan selected. <button onClick={onBack}>Go Back</button></div>;
+    if (!plan) return <div className="p-8">No plan selected. <button className="btn-primary" onClick={onBack}>Go Back</button></div>;
 
     const taxAmount = (parseFloat(plan.price.replace('$', '')) * 0.18).toFixed(2);
     const totalAmount = plan.price;
+
+    const stripeElementOptions = {
+        style: {
+            base: {
+                color: '#ffffff',
+                fontFamily: 'Inter, sans-serif',
+                fontSmoothing: 'antialiased',
+                fontSize: '16px',
+                '::placeholder': {
+                    color: 'rgba(255, 255, 255, 0.3)',
+                },
+            },
+            invalid: {
+                color: '#ff4757',
+                iconColor: '#ff4757',
+            },
+        },
+    };
 
     return (
         <div className="checkout-container">
@@ -181,18 +241,6 @@ const Checkout = ({ plan, user, refreshUser, onBack, onComplete }) => {
             </div>
 
             <div className="checkout-content">
-                {/* 3D Secure Modal */}
-                {show3DSecure && (
-                    <div className="secure-modal-overlay">
-                        <div className="secure-modal">
-                            <h3>3D Secure Verification</h3>
-                            <p>Connecting to your bank...</p>
-                            <div className="secure-loader"></div>
-                            <p className="subtitle" style={{ marginTop: '10px', fontSize: '0.9rem' }}>Please do not close this window.</p>
-                        </div>
-                    </div>
-                )}
-
                 {/* Step 1: Billing */}
                 {step === 1 && (
                     <div className="checkout-form-section">
@@ -206,12 +254,12 @@ const Checkout = ({ plan, user, refreshUser, onBack, onComplete }) => {
                         <div className="form-grid">
                             <div className="form-group">
                                 <label>First Name</label>
-                                <input name="firstName" value={billingInfo.firstName} onChange={handleBillingChange} />
+                                <input name="firstName" value={billingInfo.firstName} onChange={handleBillingChange} placeholder="John" />
                                 {errors.firstName && <span className="error-msg">{errors.firstName}</span>}
                             </div>
                             <div className="form-group">
                                 <label>Last Name</label>
-                                <input name="lastName" value={billingInfo.lastName} onChange={handleBillingChange} />
+                                <input name="lastName" value={billingInfo.lastName} onChange={handleBillingChange} placeholder="Doe" />
                                 {errors.lastName && <span className="error-msg">{errors.lastName}</span>}
                             </div>
 
@@ -231,17 +279,17 @@ const Checkout = ({ plan, user, refreshUser, onBack, onComplete }) => {
 
                             <div className="form-group full-width">
                                 <label>Address</label>
-                                <input name="address" value={billingInfo.address} onChange={handleBillingChange} />
+                                <input name="address" value={billingInfo.address} onChange={handleBillingChange} placeholder="Main St 123" />
                                 {errors.address && <span className="error-msg">{errors.address}</span>}
                             </div>
                             <div className="form-group">
                                 <label>City</label>
-                                <input name="city" value={billingInfo.city} onChange={handleBillingChange} />
+                                <input name="city" value={billingInfo.city} onChange={handleBillingChange} placeholder="New York" />
                                 {errors.city && <span className="error-msg">{errors.city}</span>}
                             </div>
                             <div className="form-group">
                                 <label>Zip Code</label>
-                                <input name="zip" value={billingInfo.zip} onChange={handleBillingChange} />
+                                <input name="zip" value={billingInfo.zip} onChange={handleBillingChange} placeholder="10001" />
                             </div>
                         </div>
 
@@ -252,105 +300,167 @@ const Checkout = ({ plan, user, refreshUser, onBack, onComplete }) => {
                     </div>
                 )}
 
-                {/* Step 2: Payment (New Credit Card Form) */}
+                {/* Step 2: Payment */}
                 {step === 2 && (
                     <div className="checkout-form-section">
                         <h2>Secure Payment</h2>
 
-                        {/* 3D Card Visual */}
-                        <div className="credit-card-visual-wrapper">
-                            <div className={`credit-card-visual ${isFlipped ? 'flipped' : ''}`}>
-                                <div className="card-inner">
-                                    <div className="card-front">
-                                        <div className="card-chip"></div>
-                                        <div className="card-logo">{cardType !== 'Unknown' ? cardType : 'GDA Bank'}</div>
-                                        <div className="card-number-display">{cardData.number || '•••• •••• •••• ••••'}</div>
-                                        <div className="card-details-row">
-                                            <div>
-                                                <div className="card-label">Card Holder</div>
-                                                <div>{cardData.holderName || 'FULL NAME'}</div>
+                        {/* Payment Method Tabs */}
+                        <div className="payment-method-tabs">
+                            <button className={`method-tab ${paymentMethod === 'card' ? 'active' : ''}`} onClick={() => setPaymentMethod('card')}>Credit Card</button>
+                            {paymentRequest && (
+                                <button className={`method-tab ${paymentMethod === 'express' ? 'active' : ''}`} onClick={() => setPaymentMethod('express')}>Apple/Google Pay</button>
+                            )}
+                            <button className={`method-tab ${paymentMethod === 'link' ? 'active' : ''}`} onClick={() => setPaymentMethod('link')}>Link ile Ödeme</button>
+                        </div>
+
+                        {paymentMethod === 'card' && (
+                            <>
+                                {/* 3D Card Visual */}
+                                <div className="credit-card-visual-wrapper">
+                                    <div className={`credit-card-visual ${isFlipped ? 'flipped' : ''}`}>
+                                        <div className="card-inner">
+                                            <div className="card-front">
+                                                <div className="card-chip"></div>
+                                                <div className="card-logo">{cardType !== 'Unknown' ? cardType : 'Stripe'}</div>
+                                                <div className="card-number-display">{cardVisual.number}</div>
+                                                <div className="card-details-row">
+                                                    <div>
+                                                        <div className="card-label">Card Holder</div>
+                                                        <div>{cardVisual.holderName}</div>
+                                                    </div>
+                                                    <div>
+                                                        <div className="card-label">Expires</div>
+                                                        <div>{cardVisual.expiry}</div>
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <div className="card-label">Expires</div>
-                                                <div>{cardData.expiry || 'MM/YY'}</div>
+                                            <div className="card-back">
+                                                <div className="magnetic-strip"></div>
+                                                <div className="cvc-display">{cardVisual.cvc}</div>
+                                                <div className="card-logo" style={{ textAlign: 'right', marginTop: 'auto' }}>SECURE</div>
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="card-back">
-                                        <div className="magnetic-strip"></div>
-                                        <div className="cvc-display">{cardData.cvc || 'CVC'}</div>
-                                        <div className="card-logo" style={{ textAlign: 'right', marginTop: 'auto' }}>GDA Bank</div>
+                                </div>
+
+                                <div className="form-grid">
+                                    <div className="form-group full-width">
+                                        <label>Card Number</label>
+                                        <div className={`stripe-input-wrapper ${errors.number ? 'error' : ''}`}>
+                                            <CardNumberElement
+                                                options={stripeElementOptions}
+                                                onChange={(e) => handleStripeChange(e, 'number')}
+                                                onFocus={() => setIsFlipped(false)}
+                                            />
+                                        </div>
+                                        {errors.number && <span className="error-msg">{errors.number}</span>}
                                     </div>
+
+                                    <div className="form-group">
+                                        <label>Expiry Date</label>
+                                        <div className={`stripe-input-wrapper ${errors.expiry ? 'error' : ''}`}>
+                                            <CardExpiryElement
+                                                options={stripeElementOptions}
+                                                onChange={(e) => handleStripeChange(e, 'expiry')}
+                                                onFocus={() => setIsFlipped(false)}
+                                            />
+                                        </div>
+                                        {errors.expiry && <span className="error-msg">{errors.expiry}</span>}
+                                    </div>
+
+                                    <div className="form-group">
+                                        <label>CVC / CVV</label>
+                                        <div className={`stripe-input-wrapper ${errors.cvc ? 'error' : ''}`}>
+                                            <CardCvcElement
+                                                options={stripeElementOptions}
+                                                onChange={(e) => handleStripeChange(e, 'cvc')}
+                                                onFocus={() => setIsFlipped(true)}
+                                            />
+                                        </div>
+                                        {errors.cvc && <span className="error-msg">{errors.cvc}</span>}
+                                    </div>
+
+                                    {errors.stripe && (
+                                        <div className="form-group full-width">
+                                            <span className="error-msg" style={{ textAlign: 'center', display: 'block' }}>{errors.stripe}</span>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="form-actions">
+                                    <button className="btn-secondary" onClick={() => setStep(1)} disabled={loading}>Back</button>
+                                    <button className="btn-primary" onClick={handleCardPayment} disabled={loading || !stripe}>
+                                        {loading ? 'Processing...' : `Pay ${plan.price}`}
+                                    </button>
+                                </div>
+                            </>
+                        )}
+
+                        {paymentMethod === 'express' && paymentRequest && (
+                            <div className="express-payment-section">
+                                <p className="subtitle" style={{ marginBottom: '20px', textAlign: 'center', color: '#aaa' }}>Fast checkout with Apple/Google Pay</p>
+                                <PaymentRequestButtonElement options={{ paymentRequest }} />
+                                <div className="form-actions" style={{ marginTop: '40px' }}>
+                                    <button className="btn-secondary" onClick={() => setStep(1)}>Back</button>
                                 </div>
                             </div>
-                        </div>
+                        )}
 
-                        <div className="form-grid">
-                            <div className="form-group full-width">
-                                <label>Card Number</label>
-                                <input
-                                    name="number"
-                                    value={cardData.number}
-                                    onChange={handleCardChange}
-                                    onFocus={handleFocus}
-                                    placeholder="0000 0000 0000 0000"
-                                    maxLength="19"
-                                    className={errors.number ? 'error' : ''}
-                                />
-                                {errors.number && <span className="error-msg">{errors.number}</span>}
+                        {paymentMethod === 'link' && (
+                            <div className="link-payment-section">
+                                <p className="subtitle" style={{ marginBottom: '20px', color: '#aaa' }}>Link ile Ödeme Formu (Demo)</p>
+                                <div className="form-grid">
+                                    <div className="form-group">
+                                        <label>İsim</label>
+                                        <input name="firstName" value={linkInfo.firstName} onChange={handleLinkChange} placeholder="İsim" />
+                                        {errors.firstName && <span className="error-msg">{errors.firstName}</span>}
+                                    </div>
+                                    <div className="form-group">
+                                        <label>Soyisim</label>
+                                        <input name="lastName" value={linkInfo.lastName} onChange={handleLinkChange} placeholder="Soyisim" />
+                                        {errors.lastName && <span className="error-msg">{errors.lastName}</span>}
+                                    </div>
+                                    <div className="form-group full-width">
+                                        <label>E-posta</label>
+                                        <input name="email" value={linkInfo.email} onChange={handleLinkChange} placeholder="ornek@mail.com" />
+                                        {errors.email && <span className="error-msg">{errors.email}</span>}
+                                    </div>
+                                    <div className="form-group full-width">
+                                        <label>Telefon</label>
+                                        <input name="phone" value={linkInfo.phone} onChange={handleLinkChange} placeholder="+90 5xx xxx xx xx" />
+                                        {errors.phone && <span className="error-msg">{errors.phone}</span>}
+                                    </div>
+                                    <div className="form-group full-width">
+                                        <label>Adres</label>
+                                        <textarea
+                                            name="address"
+                                            value={linkInfo.address}
+                                            onChange={handleLinkChange}
+                                            placeholder="Açık adresiniz..."
+                                            style={{
+                                                background: 'rgba(255, 255, 255, 0.05)',
+                                                border: '1px solid rgba(255, 255, 255, 0.1)',
+                                                borderRadius: 'var(--radius-md)',
+                                                padding: '12px',
+                                                color: '#fff',
+                                                minHeight: '100px'
+                                            }}
+                                        />
+                                        {errors.address && <span className="error-msg">{errors.address}</span>}
+                                    </div>
+                                </div>
+                                <div className="form-actions" style={{ marginTop: '30px' }}>
+                                    <button className="btn-secondary" onClick={() => setStep(1)}>Geri</button>
+                                    <button className="btn-primary" onClick={handleLinkSubmit} disabled={loading}>
+                                        {loading ? 'Gönderiliyor...' : 'Gönder'}
+                                    </button>
+                                </div>
                             </div>
-
-                            <div className="form-group full-width">
-                                <label>Card Holder Name</label>
-                                <input
-                                    name="holderName"
-                                    value={cardData.holderName}
-                                    onChange={handleCardChange}
-                                    onFocus={handleFocus}
-                                    placeholder="MERT DEMIR"
-                                    className={errors.holderName ? 'error' : ''}
-                                />
-                                {errors.holderName && <span className="error-msg">{errors.holderName}</span>}
-                            </div>
-
-                            <div className="form-group">
-                                <label>Expiry Date</label>
-                                <input
-                                    name="expiry"
-                                    value={cardData.expiry}
-                                    onChange={handleCardChange}
-                                    onFocus={handleFocus}
-                                    placeholder="MM/YY"
-                                    maxLength="5"
-                                    className={errors.expiry ? 'error' : ''}
-                                />
-                                {errors.expiry && <span className="error-msg">{errors.expiry}</span>}
-                            </div>
-
-                            <div className="form-group">
-                                <label>CVC / CVV</label>
-                                <input
-                                    name="cvc"
-                                    value={cardData.cvc}
-                                    onChange={handleCardChange}
-                                    onFocus={handleFocus}
-                                    placeholder="123"
-                                    maxLength="4"
-                                    className={errors.cvc ? 'error' : ''}
-                                />
-                                {errors.cvc && <span className="error-msg">{errors.cvc}</span>}
-                            </div>
-                        </div>
+                        )}
 
                         <div className="secure-badge" style={{ marginTop: '20px', textAlign: 'center', fontSize: '0.8rem', color: '#aaa' }}>
-                            🔒 256-bit SSL Encrypted • {cardType} Secure Payment
-                        </div>
-
-                        <div className="form-actions">
-                            <button className="btn-secondary" onClick={() => setStep(1)} disabled={loading}>Back</button>
-                            <button className="btn-primary" onClick={handlePaymentSubmit} disabled={loading}>
-                                {loading ? 'Processing...' : `Pay ${plan.price}`}
-                            </button>
+                            🔒 PCI-DSS Compliant • 256-bit SSL Encrypted • Powered by Stripe
                         </div>
                     </div>
                 )}
@@ -386,7 +496,6 @@ const Checkout = ({ plan, user, refreshUser, onBack, onComplete }) => {
                 {/* Success Screen */}
                 {step === 3 && (
                     <div className="success-screen" style={{ gridColumn: 'span 2', textAlign: 'center', padding: '50px' }}>
-                        {/* Emoji inside div for React compatibility */}
                         <div style={{ fontSize: '4rem', marginBottom: '20px' }}>🎉</div>
                         <h2 style={{ color: '#fff', fontSize: '2rem' }}>Subscription Activated!</h2>
                         <p style={{ color: '#ccc', margin: '15px 0' }}>Welcome to the <strong>{plan.name}</strong> plan.</p>
@@ -399,7 +508,7 @@ const Checkout = ({ plan, user, refreshUser, onBack, onComplete }) => {
                     <div className="error-screen" style={{ gridColumn: 'span 2', textAlign: 'center', padding: '50px' }}>
                         <div style={{ fontSize: '4rem', marginBottom: '20px' }}>❌</div>
                         <h2 style={{ color: '#ff4757', fontSize: '2rem' }}>Transaction Failed</h2>
-                        <p style={{ color: '#ccc', margin: '15px 0' }}>Your bank declined the transaction. Please check your card balance.</p>
+                        <p style={{ color: '#ccc', margin: '15px 0' }}>An error occurred while processing your payment. Please try again.</p>
                         <button className="btn-primary" onClick={() => setStep(2)}>Try Again</button>
                     </div>
                 )}

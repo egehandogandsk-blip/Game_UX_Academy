@@ -1,83 +1,87 @@
 import React from 'react';
+import { useT } from '../contexts/LanguageContext';
 import './Subscription.css';
 
 const Subscription = ({ onSelectPlan }) => {
+    const t = useT();
+
     const plans = [
         {
             id: 'free',
-            name: 'Free',
+            name: t('free'),
             price: '$0',
-            period: '/ Month',
+            period: t('perMonth'),
             features: [
-                '10 Beginner Missions / Month',
-                'Access to Free Community',
-                'Basic Profile'
+                t('feat_10BeginnerMissions'),
+                t('feat_FreeCommunity'),
+                t('feat_BasicProfile')
             ],
             highlight: false,
             color: 'var(--gda-text-secondary)',
-            buttonText: 'Get Started'
+            buttonText: t('getStarted')
         },
         {
             id: 'starter',
-            name: 'Starter',
-            price: '$2.99',
-            period: '/ Month',
+            name: t('starter') !== 'starter' ? t('starter') : 'Starter',
+            price: '$4.99',
+            period: t('perMonth'),
             features: [
-                'All Beginner Missions',
-                'AI Technical Analysis',
-                'Community Access',
-                '10% Discount on Education'
+                t('feat_AllBeginnerMissions'),
+                t('feat_AITechnicalAnalysis'),
+                t('feat_CommunityAccess'),
+                t('feat_DiscountEducation10')
             ],
             highlight: false,
             color: 'var(--gda-text-primary)',
-            buttonText: 'Subscribe'
+            buttonText: t('subscribe')
         },
         {
             id: 'prime',
-            name: 'Prime',
-            price: '$4.99',
-            period: '/ Month',
+            name: t('prime') !== 'prime' ? t('prime') : 'Prime',
+            price: '$9.99',
+            period: t('perMonth'),
             features: [
-                'Intermediate Missions',
-                'AI Technical Analysis',
-                'Exclusive Asset Packs',
-                'Community Access',
-                '4 Expert Missions',
-                '20% Discount on Education'
+                t('feat_IntermediateMissions'),
+                t('feat_AITechnicalAnalysis'),
+                t('feat_ExclusiveAssets'),
+                t('feat_CommunityAccess'),
+                t('feat_4ExpertMissions'),
+                t('feat_DiscountEducation20')
             ],
             highlight: true,
             color: 'var(--gda-accent-primary)',
-            buttonText: 'Subscribe'
+            buttonText: t('subscribe')
         },
         {
             id: 'elite',
-            name: 'Elite',
-            price: '$7.99',
-            period: '/ Month',
+            name: t('elite') !== 'elite' ? t('elite') : 'Elite',
+            price: '$19.99',
+            period: t('perMonth'),
             features: [
-                'All Expert Missions',
-                'GDA Certificate',
-                'Leaderboard Ranking Access',
-                '3x 20% Discount Coupons',
-                'Priority Community Ticket',
-                '2 Hours Consultancy'
+                t('feat_AllExpertMissions'),
+                t('feat_GDACertificate'),
+                t('feat_LeaderboardAccess'),
+                t('feat_3xDiscountCoupons'),
+                t('feat_PrioritySupport'),
+                t('feat_Consultancy2h')
             ],
             highlight: false,
             color: 'var(--gda-accent-secondary)',
-            buttonText: 'Subscribe'
+            buttonText: t('subscribe')
         }
     ];
 
     return (
         <div className="subscription-container">
             <div className="subscription-header">
-                <h1>Upgrade Your Career</h1>
-                <p>Unlock more missions, feedback, and exclusive education content.</p>
+                <h1 className="premium-title">{t('upgradeYourCareer')}</h1>
+                <p className="premium-subtitle">{t('subscriptionUnlock')}</p>
             </div>
 
             <div className="plans-grid">
                 {plans.map((plan) => (
                     <div key={plan.id} className={`plan-card ${plan.highlight ? 'highlight' : ''}`}>
+                        {plan.highlight && <div className="popular-badge">{t('mostPopular')}</div>}
                         <div className="plan-header">
                             <h2 className="plan-name">{plan.name}</h2>
                             <div className="plan-price">
@@ -99,7 +103,7 @@ const Subscription = ({ onSelectPlan }) => {
                             className="btn-subscribe"
                             onClick={() => onSelectPlan(plan)}
                         >
-                            Subscribe Now
+                            {plan.buttonText}
                         </button>
                     </div>
                 ))}

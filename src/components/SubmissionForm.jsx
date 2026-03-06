@@ -1,8 +1,10 @@
 import React, { useState, useRef } from 'react';
 import { MissionManager } from '../utils/missionManager.js';
+import { useT } from '../contexts/LanguageContext';
 import './SubmissionForm.css';
 
-const SubmissionForm = ({ mission, userId, onClose, onSubmit }) => {
+const SubmissionForm = ({ mission, onClose, onSubmit }) => {
+    const t = useT();
     const [submissionType, setSubmissionType] = useState('image'); // 'image' or 'link'
     const [images, setImages] = useState([]);
     const [figmaLink, setFigmaLink] = useState('');
@@ -75,18 +77,17 @@ const SubmissionForm = ({ mission, userId, onClose, onSubmit }) => {
         e.preventDefault();
 
         if (submissionType === 'image' && images.length === 0) {
-            alert('Lütfen en az bir görsel yükleyin.');
+            alert(t('error'));
             return;
         }
 
         if (submissionType === 'link' && !figmaLink) {
-            alert('Lütfen geçerli bir Figma linki girin.');
+            alert(t('error'));
             return;
         }
 
         setUploading(true);
 
-        // Create submission data
         const submissionData = {
             type: submissionType,
             images: submissionType === 'image' ? images.map(img => img.preview) : [],
@@ -95,13 +96,13 @@ const SubmissionForm = ({ mission, userId, onClose, onSubmit }) => {
             timestamp: new Date().toISOString()
         };
 
-        // If onSubmit is provided (which it is), call it with the data
-        // The parent (Profile) will handle the actual DB saving and AI call
         if (onSubmit) {
             await onSubmit(submissionData);
         }
 
-        onClose();
+        if (onClose) {
+            onClose();
+        }
         setUploading(false);
     };
 
@@ -110,13 +111,13 @@ const SubmissionForm = ({ mission, userId, onClose, onSubmit }) => {
             <div className="submission-modal" onClick={(e) => e.stopPropagation()}>
                 <button className="submission-close" onClick={onClose}>✕</button>
 
-                <h2 className="submission-title">Submit Your Design</h2>
+                <h2 className="submission-title">{t('submitWork')}</h2>
                 <p className="submission-subtitle">{mission.type} - {mission.game?.title}</p>
 
                 <div className="submission-layout">
                     {/* Reference Side */}
                     <div className="submission-reference">
-                        <h3>Original Design / Reference</h3>
+                        <h3>{t('gameAndRefVisuals')}</h3>
                         {mission.referenceImages && mission.referenceImages[0] ? (
                             <div className="reference-display">
                                 <img src={mission.referenceImages[0]} alt="Reference" />
@@ -126,11 +127,11 @@ const SubmissionForm = ({ mission, userId, onClose, onSubmit }) => {
                                 <img src={mission.game.coverImage} alt="Reference" />
                             </div>
                         ) : (
-                            <div className="no-reference">No reference available</div>
+                            <div className="no-reference">{t('noImagesAvailable')}</div>
                         )}
 
                         <div className="mission-requirements-mini">
-                            <h4>Requirements</h4>
+                            <h4>{t('requirements')}</h4>
                             <ul>
                                 {mission.requirements?.slice(0, 3).map((req, i) => (
                                     <li key={i}>{req}</li>
@@ -141,7 +142,7 @@ const SubmissionForm = ({ mission, userId, onClose, onSubmit }) => {
 
                     {/* Submission Side */}
                     <div className="submission-work">
-                        <h3>Submission Type</h3>
+                        <h3>{t('type')}</h3>
 
                         {/* Toggle Controls */}
                         <div className="submission-type-toggle">
@@ -150,14 +151,14 @@ const SubmissionForm = ({ mission, userId, onClose, onSubmit }) => {
                                 className={`type-btn ${submissionType === 'image' ? 'active' : ''}`}
                                 onClick={() => { setSubmissionType('image'); setFigmaLink(''); }}
                             >
-                                🖼️ Image Upload
+                                🖼️ {t('uploadScreenshots')}
                             </button>
                             <button
                                 type="button"
                                 className={`type-btn ${submissionType === 'link' ? 'active' : ''}`}
                                 onClick={() => { setSubmissionType('link'); setImages([]); }}
                             >
-                                🔗 Figma Link
+                                🔗 {t('gdaBridge')} Link
                             </button>
                         </div>
 
@@ -183,7 +184,7 @@ const SubmissionForm = ({ mission, userId, onClose, onSubmit }) => {
                                         />
                                         <div className="upload-icon">📤</div>
                                         <div className="upload-text">
-                                            Drag & drop visuals here
+                                            {t('dropFiles')}
                                         </div>
                                     </div>
 
@@ -218,17 +219,17 @@ const SubmissionForm = ({ mission, userId, onClose, onSubmit }) => {
                                         value={figmaLink}
                                         onChange={handleLinkChange}
                                     />
-                                    <p className="input-hint">Make sure the link is accessible (Public or Viewer perms).</p>
+                                    <p className="input-hint">Make sure the link is accessible.</p>
                                 </div>
                             )}
 
                             {/* Description */}
                             <div className="submission-field">
-                                <label>Design Rationale</label>
+                                <label>{t('description')}</label>
                                 <textarea
                                     value={description}
                                     onChange={(e) => setDescription(e.target.value)}
-                                    placeholder="Briefly explain your design decisions..."
+                                    placeholder={t('bio')}
                                     rows={4}
                                 />
                             </div>
@@ -240,14 +241,14 @@ const SubmissionForm = ({ mission, userId, onClose, onSubmit }) => {
                                     className="btn btn-secondary"
                                     onClick={onClose}
                                 >
-                                    Cancel
+                                    {t('cancel')}
                                 </button>
                                 <button
                                     type="submit"
                                     className="btn btn-primary btn-lg"
                                     disabled={uploading}
                                 >
-                                    {uploading ? 'Analyzing...' : 'Submit to AI Analysis ✨'}
+                                    {uploading ? t('submitting') : `${t('submit')} ✨`}
                                 </button>
                             </div>
                         </form>

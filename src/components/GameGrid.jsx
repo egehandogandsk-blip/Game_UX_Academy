@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useT } from '../contexts/LanguageContext';
 import './GameGrid.css';
 
 const GameGrid = ({ games, onGameSelect }) => {
+    const t = useT();
     const [filteredGames, setFilteredGames] = useState(games);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedGenre, setSelectedGenre] = useState('all');
@@ -75,9 +77,9 @@ const GameGrid = ({ games, onGameSelect }) => {
     return (
         <div className="game-grid-container">
             <div className="game-grid-header">
-                <h2>Game Archive</h2>
+                <h2>{t('gameArchive')}</h2>
                 <div className="game-count">
-                    {filteredGames.length} {filteredGames.length === 1 ? 'game' : 'games'}
+                    {filteredGames.length} {filteredGames.length === 1 ? t('game_singular') : t('games_count')}
                 </div>
             </div>
 
@@ -87,7 +89,7 @@ const GameGrid = ({ games, onGameSelect }) => {
                     <input
                         type="text"
                         className="input game-search"
-                        placeholder="Search games..."
+                        placeholder={t('searchGames')}
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
@@ -95,7 +97,7 @@ const GameGrid = ({ games, onGameSelect }) => {
                         <button
                             className="clear-search-btn"
                             onClick={() => setSearchTerm('')}
-                            aria-label="Clear search"
+                            aria-label={t('clearFilters')}
                         >
                             ✕
                         </button>
@@ -108,7 +110,7 @@ const GameGrid = ({ games, onGameSelect }) => {
                         checked={showMissionGamesOnly}
                         onChange={(e) => setShowMissionGamesOnly(e.target.checked)}
                     />
-                    <span>Sadece Görev Olanlar</span>
+                    <span>{t('onlyMissionGames')}</span>
                 </label>
 
                 <select
@@ -116,7 +118,7 @@ const GameGrid = ({ games, onGameSelect }) => {
                     value={selectedGenre}
                     onChange={(e) => setSelectedGenre(e.target.value)}
                 >
-                    <option value="all">All Genres ({genres.length - 1})</option>
+                    <option value="all">{t('allGenres')} ({genres.length - 1})</option>
                     {genres.slice(1).map(genre => (
                         <option key={genre} value={genre}>{genre}</option>
                     ))}
@@ -127,7 +129,7 @@ const GameGrid = ({ games, onGameSelect }) => {
                     value={selectedPlatform}
                     onChange={(e) => setSelectedPlatform(e.target.value)}
                 >
-                    <option value="all">All Platforms ({platforms.length - 1})</option>
+                    <option value="all">{t('allPlatforms')} ({platforms.length - 1})</option>
                     {platforms.slice(1).map(platform => (
                         <option key={platform} value={platform}>{platform}</option>
                     ))}
@@ -145,7 +147,7 @@ const GameGrid = ({ games, onGameSelect }) => {
                             {/* Mission Count Badge */}
                             {game.missionCount > 0 && (
                                 <div className="mission-count-badge">
-                                    🎯 {game.missionCount} Görev
+                                    🎯 {game.missionCount} {t('missionCountBadge')}
                                 </div>
                             )}
 
@@ -169,7 +171,7 @@ const GameGrid = ({ games, onGameSelect }) => {
 
                             <div className="game-overlay">
                                 <button className="btn btn-primary btn-sm">
-                                    Görevleri İncele
+                                    {t('exploreMissions')}
                                 </button>
                             </div>
                         </div>
@@ -203,7 +205,7 @@ const GameGrid = ({ games, onGameSelect }) => {
             {filteredGames.length === 0 && (
                 <div className="no-results">
                     <div className="no-results-icon">🎮</div>
-                    <div className="no-results-text">No games found</div>
+                    <div className="no-results-text">{t('noGamesFound')}</div>
                     <button
                         className="btn btn-secondary"
                         onClick={() => {
@@ -212,7 +214,7 @@ const GameGrid = ({ games, onGameSelect }) => {
                             setSelectedPlatform('all');
                         }}
                     >
-                        Clear Filters
+                        {t('clearFilters')}
                     </button>
                 </div>
             )}

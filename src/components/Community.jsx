@@ -1,41 +1,36 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import CommunityGallery from './community/CommunityGallery';
 import FigmaLive from './community/FigmaLive';
 import FileLibrary from './community/FileLibrary';
 import CommunityRoom from './community/CommunityRoom';
+import { useT } from '../contexts/LanguageContext';
 import './Community.css';
 
 const Community = ({ user }) => {
+    const t = useT();
     const { tabName } = useParams();
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('behance');
 
-    // Tabs configuration
-    // Adding 'path' for URL mapping
-    const tabs = [
+    // Tabs configuration - Memoized to prevent useEffect triggers
+    const tabs = useMemo(() => [
         { id: 'behance', label: 'Behance', icon: 'B̄', path: 'Behance' },
         { id: 'artstation', label: 'Artstation', icon: 'A', path: 'Artstation' },
         { id: 'figma', label: 'Figma Live', icon: 'F', path: 'Figma_Live' },
         { id: 'files', label: 'Design Files', icon: '📁', path: 'Design_Files' },
         { id: 'room', label: 'Community Room', icon: '💬', path: 'Community_Room' }
-    ];
+    ], []);
 
     // Sync URL with Tab State
     useEffect(() => {
         if (tabName) {
-            // Find tab where path matches tabName (case insensitive to catch manual types)
             const matchedTab = tabs.find(t => t.path.toLowerCase() === tabName.toLowerCase());
-            if (matchedTab) {
+            if (matchedTab && matchedTab.id !== activeTab) {
                 setActiveTab(matchedTab.id);
             }
-        } else {
-            // Default URL if none provided? Or just stick to default state?
-            // Let's replace URL with default tab Behance if visiting /Community root
-            // But usually, root /Community stays, and default content renders.
-            // Let's just keep 'behance' as default activeTab state.
         }
-    }, [tabName]);
+    }, [tabName, tabs, activeTab]);
 
     const handleTabChange = (tab) => {
         setActiveTab(tab.id);
@@ -63,11 +58,9 @@ const Community = ({ user }) => {
         <div className="community-container">
             <header className="community-header">
                 <div className="community-title-section">
-                    <h1>GDA Community</h1>
-                    <p>Connect, share, and explore fellow designers' work.</p>
+                    <h1>{t('community')}</h1>
+                    <p>{t('communityConnect')}</p>
                 </div>
-
-                {/* User Stats / Quick Actions could go here */}
             </header>
 
             <div className="community-tabs">

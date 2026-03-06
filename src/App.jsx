@@ -30,9 +30,10 @@ import Community from './components/Community';
 import GDABridge from './components/GDABridge';
 import Subscription from './components/Subscription';
 import Checkout from './components/Checkout';
+import { Elements } from '@stripe/react-stripe-js';
+import { StripeService } from './services/StripeService';
 import AIAssistant from './components/AIAssistant';
 import AdminPanel from './components/admin/AdminPanel';
-import './index.css';
 import './index.css';
 import './App.css';
 
@@ -85,8 +86,7 @@ const AppContent = () => {
 
   const [loading, setLoading] = useState(true);
   const [games, setGames] = useState([]);
-  // activeMissions, etc...
-  const [activeMissions, setActiveMissions] = useState([]);
+  // selectedMissions, etc...
   const [selectedMission, setSelectedMission] = useState(null);
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [showMissionDetail, setShowMissionDetail] = useState(false);
@@ -134,8 +134,7 @@ const AppContent = () => {
 
   const loadActiveMissions = async () => {
     if (!currentUser) return;
-    const missions = await MissionManager.getActiveMissions(currentUser.id);
-    setActiveMissions(missions);
+    await MissionManager.getActiveMissions(currentUser.id);
   };
 
   // ... Handlers (GameSelect, etc) ...
@@ -203,7 +202,7 @@ const AppContent = () => {
               <Route path="/Profile" element={<PageWrapper className="profile-page"><Profile userId={currentUser.id} /></PageWrapper>} />
               <Route path="/Inbox" element={<PageWrapper className="inbox-page"><Inbox userId={currentUser.id} /></PageWrapper>} />
               <Route path="/Subscription" element={<PageWrapper><Subscription onSelectPlan={(plan) => { setSelectedPlan(plan); navigate('/Checkout'); }} /></PageWrapper>} />
-              <Route path="/Checkout" element={<PageWrapper><Checkout plan={selectedPlan} user={currentUser} refreshUser={refreshUser} onBack={() => navigate('/Subscription')} onComplete={() => navigate('/Dashboard')} /></PageWrapper>} />
+              <Route path="/Checkout" element={<PageWrapper><Elements stripe={StripeService.getStripe()}><Checkout plan={selectedPlan} user={currentUser} refreshUser={refreshUser} onBack={() => navigate('/Subscription')} onComplete={() => navigate('/Dashboard')} /></Elements></PageWrapper>} />
               <Route path="/GDA_Bridge" element={<PageWrapper><GDABridge user={currentUser} /></PageWrapper>} />
               <Route path="*" element={<Navigate to="/Dashboard" replace />} />
             </Routes>

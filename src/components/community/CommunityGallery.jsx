@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import AddProjectModal from './AddProjectModal';
+import { useT } from '../../contexts/LanguageContext';
 import '../Community.css';
 
 const CommunityGallery = ({ platform }) => {
+    const t = useT();
     const [isModalOpen, setIsModalOpen] = useState(false);
 
     // Dummy Data - In a real app, this would come from a backend or Context
@@ -46,12 +48,12 @@ const CommunityGallery = ({ platform }) => {
     return (
         <div className="community-gallery">
             <div className="gallery-header">
-                <h3>{platform === 'behance' ? 'Behance Showcase' : 'Artstation Portfolio'}</h3>
+                <h3>{platform === 'behance' ? (t('behanceShowcase') || 'Behance Showcase') : (t('artstationPortfolio') || 'Artstation Portfolio')}</h3>
                 <button
                     className="btn-add-project"
                     onClick={() => setIsModalOpen(true)}
                 >
-                    + Add New Project
+                    + {t('addNewProject')}
                 </button>
             </div>
 
@@ -67,16 +69,16 @@ const CommunityGallery = ({ platform }) => {
                         <div className="project-cover">
                             <img src={project.coverImage} alt={project.title} />
                             <div className="project-overlay">
-                                <span>View on {platform === 'behance' ? 'Behance' : 'Artstation'} ↗</span>
+                                <span>{t('viewOn')} {platform === 'behance' ? 'Behance' : 'Artstation'} ↗</span>
                             </div>
                         </div>
                         <div className="project-info">
                             <h4>{project.title}</h4>
                             <div className="project-meta">
-                                <span className="author">by {project.author}</span>
+                                <span className="author">{t('by')} {project.author}</span>
                                 {project.tools && <span className="tools">{project.tools}</span>}
                             </div>
-                            {project.team && <div className="project-team">Team: {project.team}</div>}
+                            {project.team && <div className="project-team">{t('team')}: {project.team}</div>}
                             <div className="project-stats">
                                 <span>👍 {project.likes}</span>
                                 <span>👁️ {project.views}</span>

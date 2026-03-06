@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import '../Community.css'; // We'll keep styles consolidated for now
+import { useT } from '../../contexts/LanguageContext';
+import '../Community.css';
 
 const AddProjectModal = ({ isOpen, onClose, onAdd, platform }) => {
+    const t = useT();
     const [formData, setFormData] = useState({
         title: '',
         link: '',
@@ -19,37 +21,38 @@ const AddProjectModal = ({ isOpen, onClose, onAdd, platform }) => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        // Validation could go here
         onAdd({
             ...formData,
             id: Date.now(),
             platform: platform,
             likes: 0,
             views: 0,
-            author: 'You' // In real app, get from user context
+            author: 'You'
         });
         setFormData({ title: '', link: '', coverImage: '', tools: '', team: '' });
         onClose();
+    };
+
+    const getModalTitle = () => {
+        if (platform === 'files') return t('uploadNewFile');
+        if (platform === 'behance') return t('addBehanceProject');
+        if (platform === 'artstation') return t('addArtstationProject');
+        if (platform === 'figma') return t('addFigmaProject');
+        return t('addNewProject');
     };
 
     return (
         <div className="modal-overlay" onClick={onClose}>
             <div className="modal-content community-modal" onClick={e => e.stopPropagation()}>
                 <div className="modal-header">
-                    <h2>
-                        {platform === 'files' ? 'Upload New File' :
-                            platform === 'behance' ? 'Add Behance Project' :
-                                platform === 'artstation' ? 'Add Artstation Project' :
-                                    platform === 'figma' ? 'Add Figma Project' :
-                                        'Add Project'}
-                    </h2>
+                    <h2>{getModalTitle()}</h2>
                     <button className="close-btn" onClick={onClose}>&times;</button>
                 </div>
 
                 <div className="modal-body">
                     <form onSubmit={handleSubmit}>
                         <div className="form-group">
-                            <label>{platform === 'files' ? 'File Name' : 'Project Title'}</label>
+                            <label>{platform === 'files' ? t('fileName') : t('projectTitle')}</label>
                             <input
                                 type="text"
                                 name="title"
@@ -62,7 +65,7 @@ const AddProjectModal = ({ isOpen, onClose, onAdd, platform }) => {
                         </div>
 
                         <div className="form-group">
-                            <label>{platform === 'files' ? 'Link to File (Drive/Cloud)' : 'Project Link'}</label>
+                            <label>{platform === 'files' ? t('linkToFile') : t('projectLink')}</label>
                             <input
                                 type="url"
                                 name="link"
@@ -78,12 +81,12 @@ const AddProjectModal = ({ isOpen, onClose, onAdd, platform }) => {
 
                         {platform === 'figma' && (
                             <div className="form-group">
-                                <label>Description</label>
+                                <label>{t('description')}</label>
                                 <textarea
                                     name="description"
                                     value={formData.description || ''}
                                     onChange={handleChange}
-                                    placeholder="Short description of the file..."
+                                    placeholder="Short description..."
                                     className="modal-textarea"
                                     rows="3"
                                 />
@@ -91,7 +94,7 @@ const AddProjectModal = ({ isOpen, onClose, onAdd, platform }) => {
                         )}
 
                         <div className="form-group">
-                            <label>Cover Image URL</label>
+                            <label>{t('coverImageURL')}</label>
                             <input
                                 type="url"
                                 name="coverImage"
@@ -101,17 +104,11 @@ const AddProjectModal = ({ isOpen, onClose, onAdd, platform }) => {
                                 required
                                 className="input"
                             />
-                            {formData.coverImage && (
-                                <div className="image-preview" style={{ marginTop: '12px' }}>
-                                    <p style={{ fontSize: '12px', color: 'var(--gda-text-secondary)', marginBottom: '4px' }}>Preview:</p>
-                                    <img src={formData.coverImage} alt="Preview" style={{ borderRadius: '8px', border: '1px solid var(--gda-border)' }} />
-                                </div>
-                            )}
                         </div>
 
                         <div className="form-row">
                             <div className="form-group">
-                                <label>Tools Used</label>
+                                <label>{t('toolsUsed')}</label>
                                 <input
                                     type="text"
                                     name="tools"
@@ -122,7 +119,7 @@ const AddProjectModal = ({ isOpen, onClose, onAdd, platform }) => {
                                 />
                             </div>
                             <div className="form-group">
-                                <label>Company / Team</label>
+                                <label>{t('companyTeam')}</label>
                                 <input
                                     type="text"
                                     name="team"
@@ -135,9 +132,9 @@ const AddProjectModal = ({ isOpen, onClose, onAdd, platform }) => {
                         </div>
 
                         <div className="modal-footer">
-                            <button type="button" className="btn btn-secondary" onClick={onClose}>Cancel</button>
+                            <button type="button" className="btn btn-secondary" onClick={onClose}>{t('cancel')}</button>
                             <button type="submit" className="btn btn-primary">
-                                {platform === 'files' ? 'Upload Now' : 'Add Project'}
+                                {platform === 'files' ? t('uploadNow') : t('addProject')}
                             </button>
                         </div>
                     </form>
