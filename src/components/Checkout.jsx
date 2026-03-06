@@ -50,6 +50,30 @@ const Checkout = ({ plan, user, refreshUser, onBack, onComplete }) => {
     // Validation Errors
     const [errors, setErrors] = useState({});
 
+    const handleSuccess = useCallback(async (trxId = 'TEST_TRX') => {
+        if (user) {
+            await dbOperations.update('users', user.id, {
+                ...user,
+                subscriptionTier: plan.name,
+                planId: plan.id,
+                subscriptionStatus: 'active'
+            });
+
+            await dbOperations.add('subscriptions', {
+                userId: user.id,
+                plan: plan.name,
+                date: new Date().toISOString(),
+                amount: plan.price,
+                transactionId: trxId
+            });
+
+            if (refreshUser) await refreshUser();
+        }
+
+        setStep(3); // Success Screen
+        setTimeout(() => onComplete(), 5000);
+    }, [user, plan, refreshUser, onComplete]);
+
     // Stripe Payment Request Effect
     useEffect(() => {
         if (stripe && plan) {
@@ -140,29 +164,6 @@ const Checkout = ({ plan, user, refreshUser, onBack, onComplete }) => {
         if (validateBilling()) setStep(2);
     };
 
-    const handleSuccess = useCallback(async (trxId = 'TEST_TRX') => {
-        if (user) {
-            await dbOperations.update('users', user.id, {
-                ...user,
-                subscriptionTier: plan.name,
-                planId: plan.id,
-                subscriptionStatus: 'active'
-            });
-
-            await dbOperations.add('subscriptions', {
-                userId: user.id,
-                plan: plan.name,
-                date: new Date().toISOString(),
-                amount: plan.price,
-                transactionId: trxId
-            });
-
-            if (refreshUser) await refreshUser();
-        }
-
-        setStep(3); // Success Screen
-        setTimeout(() => onComplete(), 5000);
-    }, [user, plan, refreshUser, onComplete]);
 
     const handleCardPayment = useCallback(async () => {
         if (!stripe || !elements) return;
