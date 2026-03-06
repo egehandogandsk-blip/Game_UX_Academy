@@ -147,7 +147,7 @@ const BridgeManager = () => {
                 <button className={`sub-tab ${subTab === 'pass_codes' ? 'active' : ''}`} onClick={() => setSubTab('pass_codes')}>Pass Codes</button>
             </div>
 
-            <div className="actions-bar" style={{ display: 'flex', gap: '12px' }}>
+            <div className="actions-bar">
                 <button className="btn-admin primary small" onClick={() => setShowForm(true)}>+ Add New {subTab === 'pass_codes' ? 'Pass Code' : subTab.slice(0, -1)}</button>
 
                 {subTab === 'pass_codes' && (
@@ -155,7 +155,7 @@ const BridgeManager = () => {
                         <input
                             type="file"
                             accept=".xlsx, .xls"
-                            style={{ display: 'none' }}
+                            className="hidden-file-input"
                             ref={fileInputRef}
                             onChange={handleExcelUpload}
                         />
@@ -194,9 +194,9 @@ const BridgeManager = () => {
 
                                 <h4>Tags</h4>
                                 {tags.map((tag, idx) => (
-                                    <div key={idx} style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
-                                        <input placeholder="Tag" value={tag} onChange={e => updateTag(idx, e.target.value)} />
-                                        <button type="button" onClick={() => removeTag(idx)} className="btn-admin secondary small">Remove</button>
+                                    <div key={idx} className="requirement-row">
+                                        <input placeholder="Tag" value={tag} onChange={e => updateTag(idx, e.target.value)} className="admin-input-req" />
+                                        <button type="button" onClick={() => removeTag(idx)} className="btn-admin secondary small delete">Remove</button>
                                     </div>
                                 ))}
                                 <button type="button" onClick={addTag} className="btn-admin secondary small">+ Add Tag</button>
@@ -206,9 +206,9 @@ const BridgeManager = () => {
 
                                 <label>Requirements:</label>
                                 {requirements.map((req, idx) => (
-                                    <div key={idx} style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
-                                        <input placeholder="Requirement" value={req} onChange={e => updateRequirement(idx, e.target.value)} />
-                                        <button type="button" onClick={() => removeRequirement(idx)} className="btn-admin secondary small">Remove</button>
+                                    <div key={idx} className="requirement-row">
+                                        <input placeholder="Requirement" value={req} onChange={e => updateRequirement(idx, e.target.value)} className="admin-input-req" />
+                                        <button type="button" onClick={() => removeRequirement(idx)} className="btn-admin secondary small delete">Remove</button>
                                     </div>
                                 ))}
                                 <button type="button" onClick={addRequirement} className="btn-admin secondary small">+ Add Requirement</button>

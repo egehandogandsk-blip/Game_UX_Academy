@@ -31,13 +31,13 @@
 }
 
 .btn-admin.primary {
-    background: linear-gradient(135deg, #00aa55, #00ff88);
-    color: #000;
+    background: linear-gradient(135deg, var(--gda-accent-secondary), var(--gda-accent-primary));
+    color: var(--gda-bg-primary);
     box-shadow: var(--shadow-sm);
 }
 
 .btn-admin.primary:hover {
-    box-shadow: 0 0 20px rgba(0, 255, 136, 0.4);
+    box-shadow: var(--shadow-glow);
     transform: translateY(-2px);
 }
 
@@ -122,14 +122,45 @@
 .admin-form select:focus,
 .admin-form textarea:focus {
     outline: none;
-    border-color: #00ff88;
+    border-color: var(--gda-accent-primary);
     background: rgba(255, 255, 255, 0.08);
-    box-shadow: 0 0 0 3px rgba(0, 255, 136, 0.1);
+    box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.1);
+}
+
+.admin-form select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: linear-gradient(45deg, transparent 50%, var(--gda-accent-primary) 50%),
+        linear-gradient(135deg, var(--gda-accent-primary) 50%, transparent 50%);
+    background-position: calc(100% - 20px) calc(1em + 2px),
+        calc(100% - 15px) calc(1em + 2px);
+    background-size: 5px 5px,
+        5px 5px;
+    background-repeat: no-repeat;
+    color-scheme: dark;
+}
+
+.admin-form select option {
+    background-color: #000000 !important;
+    color: #ffffff !important;
+    padding: 12px;
 }
 
 .admin-form input::placeholder,
 .admin-form textarea::placeholder {
-    color: rgba(255, 255, 255, 0.3);
+    color: var(--gda-text-muted);
+}
+
+.admin-textarea {
+    min-height: 120px;
+    resize: vertical;
+}
+
+.admin-input-req,
+.admin-input-search {
+    flex: 1;
+    margin-bottom: 0 !important;
 }
 
 /* Form Actions */
@@ -138,6 +169,15 @@
     gap: var(--spacing-md);
     margin-top: var(--spacing-xl);
     justify-content: flex-end;
+}
+
+/* Row Layouts */
+.requirement-row,
+.search-row {
+    display: flex;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+    align-items: center;
 }
 
 /* RAWG Search Results - HORIZONTAL GRID LAYOUT */
@@ -211,6 +251,14 @@
     font-size: 0.85rem;
 }
 
+.rawg-thumb {
+    width: 100px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: var(--radius-sm);
+    flex-shrink: 0;
+}
+
 /* AI Generated Missions - Grid Layout */
 .generated-missions {
     margin-top: var(--spacing-lg);
@@ -278,15 +326,13 @@
 .admin-table td {
     padding: 14px 16px;
     text-align: left;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    color: #FFFFFF;
-    /* Ensure all table text is white */
+    border-bottom: 1px solid var(--gda-border);
+    color: var(--gda-text-primary);
 }
 
 .admin-table th {
-    background: rgba(255, 255, 255, 0.03);
-    color: rgba(255, 255, 255, 0.9);
-    /* Light white for headers */
+    background: rgba(10, 10, 10, 0.5);
+    color: var(--gda-text-secondary);
     font-weight: 600;
     font-size: 0.85rem;
     text-transform: uppercase;
@@ -294,8 +340,7 @@
 }
 
 .admin-table td {
-    color: #FFFFFF;
-    /* White text for table cells */
+    color: var(--gda-text-primary);
     font-size: 0.9rem;
 }
 
@@ -319,8 +364,39 @@
 }
 
 .btn-icon:hover {
-    background: rgba(255, 255, 255, 0.08);
+    background: rgba(255, 215, 0, 0.1);
     opacity: 1;
+    color: var(--gda-accent-primary);
+}
+
+/* Status Badges */
+.status-badge {
+    padding: 4px 10px;
+    border-radius: var(--radius-full);
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.status-badge.active {
+    background: rgba(0, 255, 127, 0.1);
+    color: var(--gda-success);
+    border: 1px solid rgba(0, 255, 127, 0.2);
+}
+
+/* Utility Text */
+.font-mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.text-accent {
+    color: var(--gda-accent-primary);
+}
+
+.module-subtitle {
+    color: var(--gda-text-secondary);
+    margin-bottom: var(--spacing-xl);
+    font-size: 0.95rem;
 }
 
 /* User Management Layout */

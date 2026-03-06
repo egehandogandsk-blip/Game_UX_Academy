@@ -113,7 +113,7 @@ const UserManager = () => {
                                 {user.isBanned ? (
                                     <span className="status-badge banned">Banned</span>
                                 ) : user.subscriptionStatus === 'pending_approval' ? (
-                                    <span className="status-badge pending" style={{ background: '#f6cc32', color: '#000' }}>
+                                    <span className="status-badge pending">
                                         {t('pending_approval')} ({user.pendingTier})
                                     </span>
                                 ) : (
@@ -126,17 +126,15 @@ const UserManager = () => {
                                     <>
                                         <button
                                             onClick={() => handleApproveSubscription(user)}
-                                            className="action-btn approve"
+                                            className="btn-admin primary small"
                                             title={t('approveSubscription')}
-                                            style={{ background: 'var(--gda-success)', fontSize: '12px', padding: '4px 8px', borderRadius: '4px', color: '#000', border: 'none', cursor: 'pointer' }}
                                         >
                                             {t('approveSubscription')}
                                         </button>
                                         <button
                                             onClick={() => handleCancelSubscription(user)}
-                                            className="action-btn cancel"
+                                            className="btn-admin secondary small delete"
                                             title={t('cancel')}
-                                            style={{ background: 'var(--gda-error)', fontSize: '12px', padding: '4px 8px', borderRadius: '4px', color: '#fff', border: 'none', cursor: 'pointer' }}
                                         >
                                             {t('cancel')}
                                         </button>

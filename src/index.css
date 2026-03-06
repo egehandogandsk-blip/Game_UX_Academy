@@ -78,6 +78,8 @@
   --z-dropdown: 100;
   --z-sticky: 200;
   --z-fixed: 300;
+
+  color-scheme: dark;
 }
 
 /* Global Resets */

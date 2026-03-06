@@ -242,9 +242,9 @@ const MissionManager = () => {
 
                         <h4>Requirements</h4>
                         {requirements.map((req, idx) => (
-                            <div key={idx} style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
-                                <input placeholder="Requirement" value={req} onChange={e => updateRequirement(idx, e.target.value)} />
-                                <button type="button" onClick={() => removeRequirement(idx)} className="btn-admin secondary small">Remove</button>
+                            <div key={idx} className="requirement-row">
+                                <input placeholder="Requirement" value={req} onChange={e => updateRequirement(idx, e.target.value)} className="admin-input-req" />
+                                <button type="button" onClick={() => removeRequirement(idx)} className="btn-admin secondary small delete">Remove</button>
                             </div>
                         ))}
                         <button type="button" onClick={addRequirement} className="btn-admin secondary small">+ Add Requirement</button>
@@ -314,8 +314,8 @@ const MissionManager = () => {
                     <div className="admin-form">
                         <h3>🎮 Import Game from RAWG</h3>
 
-                        <div style={{ display: 'flex', gap: '8px' }}>
-                            <input placeholder="Search games..." value={rawgQuery} onChange={e => setRawgQuery(e.target.value)} onKeyPress={e => e.key === 'Enter' && handleRAWGSearch()} />
+                        <div className="search-row">
+                            <input placeholder="Search games..." value={rawgQuery} onChange={e => setRawgQuery(e.target.value)} onKeyPress={e => e.key === 'Enter' && handleRAWGSearch()} className="admin-input-search" />
                             <button onClick={handleRAWGSearch} disabled={searching} className="btn-admin primary">
                                 {searching ? 'Searching...' : 'Search'}
                             </button>
@@ -325,7 +325,7 @@ const MissionManager = () => {
                             <div className="rawg-results">
                                 {rawgResults.map(game => (
                                     <div key={game.id} className="rawg-game-card">
-                                        <img src={game.background_image} alt={game.name} style={{ width: '100px', height: '60px', objectFit: 'cover', borderRadius: '4px' }} />
+                                        <img src={game.background_image} alt={game.name} className="rawg-thumb" />
                                         <div>
                                             <h5>{game.name}</h5>
                                             <p>{game.genres.join(', ')}</p>

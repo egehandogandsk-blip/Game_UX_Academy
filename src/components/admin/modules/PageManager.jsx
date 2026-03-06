@@ -43,7 +43,7 @@ const PageManager = () => {
     return (
         <div className="page-manager">
             <h2 className="module-title">Page Manager</h2>
-            <p style={{ color: '#666', marginBottom: '20px' }}>Manage SEO metadata and route configurations.</p>
+            <p className="module-subtitle">Manage SEO metadata and route configurations.</p>
 
             <div className="data-table-container">
                 <table className="admin-table">
@@ -59,10 +59,10 @@ const PageManager = () => {
                     <tbody>
                         {pages.map((page, idx) => (
                             <tr key={idx}>
-                                <td style={{ fontFamily: 'monospace', color: '#00ff88' }}>{page.route}</td>
+                                <td className="font-mono text-accent">{page.route}</td>
                                 <td>{page.title}</td>
                                 <td>{page.description}</td>
-                                <td><span className="status-green">Active</span></td>
+                                <td><span className="status-badge active">Active</span></td>
                                 <td>
                                     <button onClick={() => setEditingPage(page)} className="btn-icon">⚙️</button>
                                 </td>
@@ -87,7 +87,7 @@ const PageManager = () => {
                         <textarea
                             value={editingPage.description}
                             onChange={e => setEditingPage({ ...editingPage, description: e.target.value })}
-                            style={{ width: '100%', background: '#222', border: '1px solid #444', color: 'white', padding: '8px', minHeight: '80px', borderRadius: '6px', marginBottom: '12px' }}
+                            className="admin-textarea"
                         />
 
                         <div className="form-actions">
